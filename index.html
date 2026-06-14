@@ -11,7 +11,7 @@
   :root, [data-theme=light] {
     color-scheme: light;
     --bg:#f6f7f9; --card:#ffffff; --text:#1a1d21; --muted:#6b7280; --border:#e5e7eb;
-    --accent:#4338ca; --accent2:#d97706; --btn-bg:#1a1d21; --btn-fg:#fff;
+    --accent:#4338ca; --accent2:#d97706; --on-accent:#fff; --btn-bg:#1a1d21; --btn-fg:#fff;
     --badge-bg:#eef2ff; --badge-fg:#4338ca; --warn-bg:#fef3c7; --warn-fg:#b45309;
     --ok-bg:#dcfce7; --ok-fg:#15803d; --sick-bg:#fee2e2; --sick-fg:#b91c1c;
     --input-bg:#fff; --soft:#f3f4f6; --bar-bg:#e5e7eb;
@@ -19,10 +19,42 @@
   [data-theme=dark] {
     color-scheme: dark;
     --bg:#0f1216; --card:#1a1f26; --text:#e8eaed; --muted:#98a2ad; --border:#2c333c;
-    --accent:#8b9cf7; --accent2:#f0a84e; --btn-bg:#e8eaed; --btn-fg:#14181d;
+    --accent:#8b9cf7; --accent2:#f0a84e; --on-accent:#14181d; --btn-bg:#e8eaed; --btn-fg:#14181d;
     --badge-bg:#272e4a; --badge-fg:#aab8ff; --warn-bg:#3a2d10; --warn-fg:#f0c060;
     --ok-bg:#11301c; --ok-fg:#5fd18a; --sick-bg:#3a1518; --sick-fg:#f08a8a;
     --input-bg:#12161b; --soft:#232a32; --bar-bg:#2c333c;
+  }
+  [data-theme=graphit] {
+    color-scheme: dark;
+    --bg:#101011; --card:#18181b; --text:#f3f1ec; --muted:#a0a09a; --border:#2a2a2e;
+    --accent:#ef9f27; --accent2:#5bb4c4; --on-accent:#2a2009; --btn-bg:#ede9e1; --btn-fg:#1a1714;
+    --badge-bg:#2a2009; --badge-fg:#efb04c; --warn-bg:#3a2d10; --warn-fg:#f0c060;
+    --ok-bg:#11301c; --ok-fg:#5fd18a; --sick-bg:#3a1518; --sick-fg:#f08a8a;
+    --input-bg:#121214; --soft:#1f1f22; --bar-bg:#2c2c30;
+  }
+  [data-theme=onyx] {
+    color-scheme: dark;
+    --bg:#0a0a0b; --card:#141416; --text:#f6f6f4; --muted:#9a9a97; --border:#242428;
+    --accent:#e7e7e4; --accent2:#7fb4f0; --on-accent:#0a0a0b; --btn-bg:#f6f6f4; --btn-fg:#0a0a0b;
+    --badge-bg:#1c1c1f; --badge-fg:#e7e7e4; --warn-bg:#332a12; --warn-fg:#e8c071;
+    --ok-bg:#13301f; --ok-fg:#5dcaa5; --sick-bg:#341619; --sick-fg:#ef8d8d;
+    --input-bg:#121214; --soft:#1c1c1f; --bar-bg:#242428;
+  }
+  [data-theme=rosa] {
+    color-scheme: light;
+    --bg:#faedf2; --card:#ffffff; --text:#3e2330; --muted:#8a6b78; --border:#ecd3de;
+    --accent:#d4537e; --accent2:#e08a3c; --on-accent:#ffffff; --btn-bg:#3e2330; --btn-fg:#fff7fb;
+    --badge-bg:#f4d3e0; --badge-fg:#993556; --warn-bg:#fbe9c8; --warn-fg:#9a6512;
+    --ok-bg:#d6f0e4; --ok-fg:#0f6e56; --sick-bg:#fad6d6; --sick-fg:#b23a3a;
+    --input-bg:#ffffff; --soft:#fbf3f7; --bar-bg:#ecd3de;
+  }
+  [data-theme=blau] {
+    color-scheme: dark;
+    --bg:#0a1020; --card:#101a2d; --text:#eaf1fb; --muted:#8aa0c0; --border:#1c2a44;
+    --accent:#378add; --accent2:#f0a84e; --on-accent:#06182e; --btn-bg:#dce8f7; --btn-fg:#0a1020;
+    --badge-bg:#13233e; --badge-fg:#7fb4f0; --warn-bg:#33290f; --warn-fg:#e8c071;
+    --ok-bg:#10301f; --ok-fg:#5dcaa5; --sick-bg:#341a1c; --sick-fg:#ef8d8d;
+    --input-bg:#0c1424; --soft:#13233e; --bar-bg:#1c2a44;
   }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); padding:16px; }
@@ -35,7 +67,11 @@
   .tab.active { background:var(--btn-bg); color:var(--btn-fg); border-color:var(--btn-bg); }
   .subtabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
   .subtab { padding:6px 13px; border-radius:16px; border:1px solid var(--border); background:var(--soft); color:var(--text); cursor:pointer; font-size:13px; }
-  .subtab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .subtab.active { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+  .theme-sw { display:inline-flex; gap:6px; vertical-align:middle; }
+  .theme-sw .swatch { width:24px; height:24px; border-radius:7px; border:2px solid var(--border); cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; transition:border-color .15s, transform .1s; }
+  .theme-sw .swatch:active { transform:scale(.92); }
+  .theme-sw .swatch.on { border-color:var(--accent); }
   .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:12px; }
   select, input, textarea { font:inherit; padding:7px 10px; border:1px solid var(--border); border-radius:8px; background:var(--input-bg); color:var(--text); }
   input[type=number] { width:70px; }
@@ -94,7 +130,7 @@
     <span id="syncBadge" style="font-size:12px; color:var(--muted); border:1px solid var(--border); border-radius:10px; padding:3px 9px;">lokal</span>
     <button class="btn small" id="sickBtn">Krank melden</button>
     <button class="btn small" id="dataBtn">Daten</button>
-    <button class="btn small" id="themeBtn">Dunkel</button>
+    <span class="theme-sw" id="themeSw" title="Farbschema"></span>
   </div>
 </div>
 <div class="sub">Dein Rundum-Coach · Training, Ernährung & Progression</div>
@@ -133,8 +169,10 @@
   <div class="subtabs">
     <button class="subtab active" data-fsub="today">Heute</button>
     <button class="subtab" data-fsub="stats">Statistik</button>
+    <button class="subtab" data-fsub="shop">Einkaufen</button>
   </div>
   <div id="fview-today"></div>
+  <div id="fview-shop" style="display:none"></div>
   <div id="fview-stats" style="display:none">
     <div class="card">
       <div class="ex-name" style="margin-bottom:10px">Kalorien & Protein (letzte 14 Tage)</div>
@@ -308,6 +346,7 @@ let sick = loadKey("sickLogs", []);
 let profile = loadKey("coachProfile", {});
 let foods = loadKey("foodLogs", []);        // [{date, n, g, kcal, p, c, f, fib}]
 let weights = loadKey("weightLogs", []);    // [{date, kg}]
+let shopStores = loadKey("shopStores", ["lidl"]);   // ausgewaehlte Supermaerkte (Mehrfachauswahl)
 let syncUpdatedAt = lsGet(dk("updatedAt"), 0) || 0;
 if (!syncUpdatedAt && (logs.length > 1 || foods.length || weights.length || (profile && profile.h)))
   syncUpdatedAt = Date.now();   // vorhandene echte Daten als Quelle markieren
@@ -320,6 +359,7 @@ function saveAll(opts){
   store.set(dk("coachProfile"), JSON.stringify(profile));
   store.set(dk("foodLogs"), JSON.stringify(foods));
   store.set(dk("weightLogs"), JSON.stringify(weights));
+  store.set(dk("shopStores"), JSON.stringify(shopStores));
   if (!opts.silent && !opts.fromRemote){ syncUpdatedAt = Date.now(); pushRemote(); }
   store.set(dk("updatedAt"), JSON.stringify(syncUpdatedAt));
 }
@@ -329,7 +369,7 @@ store.set("coach_migrated", "1");
 // ----- Cloud-Sync (optional, Firebase Firestore) -----
 let db = null, docRef = null, applyingRemote = false, saveTimer = null;
 function setBadge(txt, col){ const b = document.getElementById("syncBadge"); if (b){ b.textContent = txt; b.style.color = col || "var(--muted)"; } }
-function snapshotData(){ return { logs, plan, sick, profile, foods, weights, updatedAt: syncUpdatedAt }; }
+function snapshotData(){ return { logs, plan, sick, profile, foods, weights, shopStores, updatedAt: syncUpdatedAt }; }
 function pushRemote(){
   if (!docRef) return;
   clearTimeout(saveTimer);
@@ -346,6 +386,7 @@ function adoptRemote(d){
   if (d.profile) profile = d.profile;
   if (Array.isArray(d.foods)) foods = d.foods;
   if (Array.isArray(d.weights)) weights = d.weights;
+  if (Array.isArray(d.shopStores)) shopStores = d.shopStores;
   syncUpdatedAt = d.updatedAt || Date.now();
   saveAll({ fromRemote:true });
   applyingRemote = false;
@@ -398,27 +439,32 @@ function toast(msg){
 }
 
 // ================= Ziele aus Profil =================
-const ACTS = [
-  [1.2,"fast nur sitzend (Büro, wenig Bewegung)"],
-  [1.3,"überwiegend sitzend, etwas Alltag"],
-  [1.4,"gemischt: sitzen, stehen, gehen"],
-  [1.5,"viel auf den Beinen"],
-  [1.6,"aktiv (stehende/laufende Schicht + Gym)"],
-  [1.75,"körperlich harte Arbeit"],
-  [1.9,"extrem aktiv (Bau, Lager schwer o.ä.)"]
-];
+// MET-Werte je Trainingsart (kcal-Intensität), additive Arbeits-kcal/Tag
+const TRAIN_MET = { kraft:5, kraft_cardio:6.5, cardio_mod:7.5, cardio_intens:10 };
+const JOB_KCAL  = { sitzend:0, gemischt:150, stehend:300, schwer:500 };
 function targets(){
   const p = profile;
   if (!p.h || !p.w || !p.age) return null;
   const bmr = 10*p.w + 6.25*p.h - 5*p.age + (p.sex==="f" ? -161 : 5);
-  let kcal = Math.round(bmr * (p.act||1.5) + (p.goal??250));
+  const tef = bmr * 0.1;                                  // Thermogenese (Verdauung) ~10 %
+  const steps = p.steps ?? 8000;
+  const stepKcal = steps * p.w * 0.0005;                  // NEAT aus Schritten, gewichtsskaliert
+  const jobKcal = JOB_KCAL[p.job] ?? 0;                   // körperl. Arbeit zusätzlich zu Schritten
+  const days = p.trainDays ?? 4;
+  const min = p.trainMin ?? 60;
+  const met = TRAIN_MET[p.trainType] ?? 5;
+  const perSession = met * 3.5 * p.w / 200 * min;         // kcal pro Trainingseinheit (MET-Formel)
+  const trainKcal = days * perSession / 7;                // auf den Tag gemittelt
+  const tdee = Math.round(bmr + tef + stepKcal + jobKcal + trainKcal);
+  let kcal = tdee + (p.goal ?? 250);
   if (p.ovrOn && p.ovrKcal) kcal = p.ovrKcal;
   const prot = Math.round(p.w * 2);
   const fat = Math.round(p.w * 0.9);
   const carbs = Math.max(0, Math.round((kcal - prot*4 - fat*9)/4));
   const fib = Math.round(kcal/1000*14);
   const water = Math.round(p.w*3.5)/100;
-  return {kcal, prot, fat, carbs, fib, water};
+  return {kcal, prot, fat, carbs, fib, water, tdee,
+    comp:{ bmr:Math.round(bmr), tef:Math.round(tef), step:Math.round(stepKcal), job:Math.round(jobKcal), train:Math.round(trainKcal) }};
 }
 function dayTotals(date){
   const t = {kcal:0,p:0,c:0,f:0,fib:0};
@@ -435,14 +481,34 @@ function macroBar(label, val, max, unit){
 }
 
 // ================= Theme =================
+const THEMES = [
+  { id:"light",   name:"Hell",              bg:"#f6f7f9", ac:"#4338ca" },
+  { id:"dark",    name:"Dunkel",            bg:"#0f1216", ac:"#8b9cf7" },
+  { id:"graphit", name:"Graphit & Bernstein", bg:"#101011", ac:"#ef9f27" },
+  { id:"onyx",    name:"Onyx",              bg:"#0a0a0b", ac:"#e7e7e4" },
+  { id:"rosa",    name:"Altrosa",           bg:"#faedf2", ac:"#d4537e" },
+  { id:"blau",    name:"Mitternachtsblau",  bg:"#0a1020", ac:"#378add" }
+];
 function applyTheme(t){
+  if (!THEMES.some(x=>x.id===t)) t = "light";
   document.documentElement.dataset.theme = t;
   store.set("coachTheme", t);
-  document.getElementById("themeBtn").textContent = t==="dark" ? "Hell" : "Dunkel";
+  document.querySelectorAll("#themeSw .swatch").forEach(s=>s.classList.toggle("on", s.dataset.t===t));
   redrawCharts();
 }
-document.getElementById("themeBtn").onclick = () =>
-  applyTheme(document.documentElement.dataset.theme==="dark" ? "light" : "dark");
+(function buildThemeSwitcher(){
+  const box = document.getElementById("themeSw");
+  THEMES.forEach(t=>{
+    const b = document.createElement("button");
+    b.className = "swatch"; b.dataset.t = t.id; b.title = t.name;
+    b.style.background = t.bg;
+    const dot = document.createElement("span");
+    dot.style.cssText = "display:block;width:8px;height:8px;border-radius:50%;background:"+t.ac+";";
+    b.appendChild(dot);
+    b.onclick = ()=>applyTheme(t.id);
+    box.appendChild(b);
+  });
+})();
 
 // ================= Krank / Comeback =================
 document.getElementById("sickBtn").onclick = () => {
@@ -507,7 +573,7 @@ document.querySelectorAll("[data-sub]").forEach(b => b.onclick = () => {
 document.querySelectorAll("[data-fsub]").forEach(b => b.onclick = () => {
   document.querySelectorAll("[data-fsub]").forEach(x=>x.classList.remove("active"));
   b.classList.add("active");
-  ["today","stats"].forEach(v => document.getElementById("fview-"+v).style.display = v===b.dataset.fsub ? "" : "none");
+  ["today","stats","shop"].forEach(v => document.getElementById("fview-"+v).style.display = v===b.dataset.fsub ? "" : "none");
   renderActiveFoodSub();
 });
 function renderActiveTrainSub(){
@@ -521,6 +587,7 @@ function renderActiveFoodSub(){
   const sub = document.querySelector("[data-fsub].active").dataset.fsub;
   if (sub==="today") renderFoodToday();
   if (sub==="stats") renderFoodStats();
+  if (sub==="shop") renderShopping();
 }
 
 // ================= Übersicht =================
@@ -895,6 +962,48 @@ function renderFoodStats(){
   };
 }
 
+// ================= Ernährung: Einkaufen =================
+const STORES = {
+  lidl:     { name:"Lidl",     brands:{ Protein:"Dulano / Grillmeister", Molkerei:"Milbona", Kohlenhydrate:"Crownfield / Combino" } },
+  rewe:     { name:"Rewe",     brands:{ Protein:"Wilhelm Brandenburg", Molkerei:"ja! / REWE Beste Wahl", Kohlenhydrate:"ja!" } },
+  aldi:     { name:"Aldi",     brands:{ Protein:"Meine Metzgerei", Molkerei:"Milsani", Kohlenhydrate:"Knusperone / Cucina" } },
+  edeka:    { name:"Edeka",    brands:{ Protein:"GUT&GÜNSTIG", Molkerei:"GUT&GÜNSTIG", Kohlenhydrate:"GUT&GÜNSTIG" } },
+  kaufland: { name:"Kaufland", brands:{ Protein:"K-Purland", Molkerei:"K-Classic", Kohlenhydrate:"K-Classic" } }
+};
+const GROCERIES = [
+  { cat:"Protein",       brandKey:"Protein",       items:["Hähnchenbrust","Putenstreifen","Hackfleisch (mager)","Eier (10er)","Thunfisch (Dose)"] },
+  { cat:"Molkerei",      brandKey:"Molkerei",      items:["Magerquark","Skyr","Hüttenkäse","Milch","Proteinpulver"] },
+  { cat:"Kohlenhydrate", brandKey:"Kohlenhydrate", items:["Haferflocken","Reis","Vollkornbrot","Vollkornwraps","Linsen"] },
+  { cat:"Gemüse & Obst", brandKey:null,            items:["Brokkoli","Beeren (TK)","Banane","Tomaten","Spinat"] }
+];
+function renderShopping(){
+  const el = document.getElementById("fview-shop");
+  const sel = shopStores.filter(k => STORES[k]);
+  const chips = Object.keys(STORES).map(k =>
+    `<button class="subtab${sel.includes(k)?" active":""}" data-store="${k}">${STORES[k].name}</button>`).join("");
+  const listHtml = GROCERIES.map(g=>{
+    const items = g.items.map(it=>`<div class="food-item"><div><b>${it}</b></div></div>`).join("");
+    let brandLine = "";
+    if (g.brandKey && sel.length){
+      const brands = sel.map(k=>`${STORES[k].name}: ${STORES[k].brands[g.brandKey]}`).join(" · ");
+      brandLine = `<div class="fi-vals" style="margin-top:8px">Eigenmarken — ${brands}</div>`;
+    }
+    return `<div class="card"><div class="ex-name" style="margin-bottom:6px">${g.cat}</div>${items}${brandLine}</div>`;
+  }).join("");
+  el.innerHTML = `
+    <div class="card">
+      <div class="ex-name" style="margin-bottom:10px">Supermärkte <span style="font-weight:400;color:var(--muted);font-size:13px">(Mehrfachauswahl)</span></div>
+      <div class="subtabs" id="storeChips" style="margin-bottom:6px">${chips}</div>
+      <p style="font-size:12px;color:var(--muted);margin:0">Tippe Märkte an oder ab — die Liste zeigt die passenden Eigenmarken aller gewählten Märkte. Richtwerte, Verfügbarkeit variiert je Filiale.</p>
+    </div>
+    ${sel.length ? listHtml : '<div class="card empty">Wähle oben mindestens einen Supermarkt.</div>'}`;
+  document.querySelectorAll("#storeChips [data-store]").forEach(b => b.onclick = () => {
+    const k = b.dataset.store;
+    shopStores = shopStores.includes(k) ? shopStores.filter(x=>x!==k) : [...shopStores, k];
+    saveAll(); renderShopping();
+  });
+}
+
 // ================= Profil =================
 function renderProfile(){
   const el = document.getElementById("view-profile");
@@ -909,10 +1018,19 @@ function renderProfile(){
         <div><label>Geschlecht</label><select id="pSex">
           <option value="m"${p.sex!=="f"?" selected":""}>männlich</option>
           <option value="f"${p.sex==="f"?" selected":""}>weiblich</option></select></div>
-        <div><label>Aktivität (Alltag, Training ist eingerechnet)</label><select id="pAct">
-          ${(() => { const cur = p.act || 1.5;
-            const closest = ACTS.reduce((a,b)=>Math.abs(b[0]-cur)<Math.abs(a[0]-cur)?b:a)[0];
-            return ACTS.map(a=>`<option value="${a[0]}"${a[0]===closest?" selected":""}>${a[1]}</option>`).join(""); })()}</select></div>
+        <div><label>Schritte/Tag (Ø, inkl. Arbeit)</label><input type="number" id="pSteps" min="0" max="40000" step="500" value="${p.steps??8000}"></div>
+        <div><label>Trainingstage/Woche</label><input type="number" id="pTDays" min="0" max="14" value="${p.trainDays??4}"></div>
+        <div><label>Trainingsart</label><select id="pTType">
+          <option value="kraft"${(p.trainType==null||p.trainType==="kraft")?" selected":""}>Krafttraining</option>
+          <option value="kraft_cardio"${p.trainType==="kraft_cardio"?" selected":""}>Kraft + etwas Cardio</option>
+          <option value="cardio_mod"${p.trainType==="cardio_mod"?" selected":""}>Cardio moderat (zügig)</option>
+          <option value="cardio_intens"${p.trainType==="cardio_intens"?" selected":""}>Cardio intensiv (HIIT / Laufen)</option></select></div>
+        <div><label>Dauer/Einheit (Min)</label><input type="number" id="pTMin" min="10" max="180" step="5" value="${p.trainMin??60}"></div>
+        <div><label>Körperl. Arbeit (zusätzl. zu Schritten)</label><select id="pJob">
+          <option value="sitzend"${(p.job==null||p.job==="sitzend")?" selected":""}>kaum (sitzend / Büro)</option>
+          <option value="gemischt"${p.job==="gemischt"?" selected":""}>gemischt (etwas Heben/Tragen)</option>
+          <option value="stehend"${p.job==="stehend"?" selected":""}>viel stehen / gehen</option>
+          <option value="schwer"${p.job==="schwer"?" selected":""}>schwere körperl. Arbeit</option></select></div>
         <div><label>Ziel</label><select id="pGoal">
           <option value="500"${p.goal==500?" selected":""}>Schneller Aufbau (+500 kcal) — mehr Masse, auch etwas Fett</option>
           <option value="250"${(p.goal==null||p.goal==250)?" selected":""}>Muskelaufbau (+250 kcal) — Standard</option>
@@ -934,14 +1052,16 @@ function renderProfile(){
     ${tg ? `<div class="card">
       <div class="ex-name" style="margin-bottom:10px">Deine Tagesziele</div>
       <div class="tgt-grid">
-        ${stat(tg.kcal+" kcal", p.ovrOn ? "Kalorien (manuell)" : "Kalorien")}
+        ${stat(tg.tdee+" kcal","Erhaltung (TDEE)")}
+        ${stat(tg.kcal+" kcal", p.ovrOn ? "Ziel (manuell)" : "Ziel-Kalorien")}
         ${stat(tg.prot+" g","Protein (2 g/kg)")}
         ${stat(tg.carbs+" g","Kohlenhydrate")}
         ${stat(tg.fat+" g","Fett")}
         ${stat(tg.fib+" g","Ballaststoffe")}
         ${stat("~"+tg.water+" l","Wasser")}
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-top:10px">Berechnung: Mifflin-St-Jeor-Formel × Aktivität + Ziel-Anpassung. Protein bewusst hoch für Muskelaufbau. Richtwerte — höre auf deinen Körper.</p>
+      <p style="font-size:12px;color:var(--muted);margin-top:10px">Zusammensetzung Erhaltung (kcal/Tag): Grundumsatz ${tg.comp.bmr} + Verdauung ${tg.comp.tef} + Schritte ${tg.comp.step} + Arbeit ${tg.comp.job} + Training ${tg.comp.train}.</p>
+      <p style="font-size:12px;color:var(--muted);margin-top:6px">Modell: Mifflin-St-Jeor (Grundumsatz) + Schritte- & Trainings-Schätzung (MET) + Ziel-Anpassung. Protein bewusst hoch für Muskelaufbau. Richtwerte — bei Gewichtsänderung über 2–3 Wochen nachjustieren.</p>
     </div>` : '<div class="card empty">Fülle die Körperdaten aus und speichere — dann erscheinen hier deine Tagesziele.</div>'}`;
   document.getElementById("pOvr").onchange = e =>
     document.getElementById("ovrRow").style.display = e.target.checked ? "flex" : "none";
@@ -953,7 +1073,11 @@ function renderProfile(){
       w:+document.getElementById("pW").value || null,
       age:+document.getElementById("pAge").value || null,
       sex:document.getElementById("pSex").value,
-      act:+document.getElementById("pAct").value,
+      steps:+document.getElementById("pSteps").value || 0,
+      trainDays:+document.getElementById("pTDays").value || 0,
+      trainType:document.getElementById("pTType").value,
+      trainMin:+document.getElementById("pTMin").value || 0,
+      job:document.getElementById("pJob").value,
       goal:+document.getElementById("pGoal").value,
       ovrOn:document.getElementById("pOvr").checked,
       ovrKcal:+document.getElementById("pOvrKcal").value || null
@@ -1076,7 +1200,7 @@ document.getElementById("dataBtn").onclick = () => {
   document.getElementById("dataDlg").showModal();
 };
 document.getElementById("expBtn").onclick = () => {
-  document.getElementById("dataTxt").value = JSON.stringify({coach:2, exportedAt:new Date().toISOString(), logs, sick, plan, profile, foods, weights});
+  document.getElementById("dataTxt").value = JSON.stringify({coach:2, exportedAt:new Date().toISOString(), logs, sick, plan, profile, foods, weights, shopStores});
 };
 document.getElementById("copyBtn").onclick = async () => {
   const ta = document.getElementById("dataTxt");
@@ -1116,6 +1240,7 @@ document.getElementById("impBtn").onclick = () => {
     d.weights.forEach(x => { if (!wHave.has(x.date)) weights.push(x); });
     weights.sort((a,b)=>a.date.localeCompare(b.date));
   }
+  if (Array.isArray(d.shopStores)) shopStores = d.shopStores;
   if ((Array.isArray(d.plan) && d.plan.length || d.profile) && confirm("Auch Plan & Profil aus dem Import übernehmen?")){
     if (Array.isArray(d.plan) && d.plan.length) plan = d.plan;
     if (d.profile && d.profile.h) profile = d.profile;
