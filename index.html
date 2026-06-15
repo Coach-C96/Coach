@@ -168,10 +168,12 @@
 <div id="view-food" style="display:none">
   <div class="subtabs">
     <button class="subtab active" data-fsub="today">Heute</button>
+    <button class="subtab" data-fsub="meals">Gerichte</button>
     <button class="subtab" data-fsub="stats">Statistik</button>
     <button class="subtab" data-fsub="shop">Einkaufen</button>
   </div>
   <div id="fview-today"></div>
+  <div id="fview-meals" style="display:none"></div>
   <div id="fview-shop" style="display:none"></div>
   <div id="fview-stats" style="display:none">
     <div class="card">
@@ -280,26 +282,116 @@ const SEED = [{
   ]
 }];
 
-// ============ Lebensmittel-Datenbank (pro 100 g) ============
+// ============ Lebensmittel-Datenbank (pro 100 g / 100 ml) ============
+// Format: [Name, kcal, Protein, KH, Fett, Ballaststoffe, Kategorie]
+// Werte gerundet nach USDA FoodData Central / Bundeslebensmittelschlüssel (BLS). Richtwerte, Marken variieren.
+const FOOD_CATS = ["Fleisch & Fisch","Molkerei & Eier","Kohlenhydrate","Gemüse","Obst","Fette & Nüsse","Snacks & Sonstiges"];
 const FOOD_DB = [
-  ["Reis (gekocht)",130,2.7,28,0.3,0.4], ["Nudeln (gekocht)",158,5.8,31,0.9,1.8],
-  ["Kartoffeln (gekocht)",86,1.9,20,0.1,1.8], ["Süßkartoffel",86,1.6,20,0.1,3],
-  ["Haferflocken",370,13,59,7,10], ["Vollkornbrot",247,8.5,41,3.5,7],
-  ["Reiswaffeln",387,8,80,3,3], ["Hähnchenbrust",165,31,0,3.6,0],
-  ["Rinderhack (5%)",137,21,0,5,0], ["Lachs",208,20,0,13,0],
-  ["Thunfisch (Dose, Wasser)",116,26,0,1,0], ["Ei",155,13,1.1,11,0],
-  ["Magerquark",67,12,4,0.3,0], ["Skyr",63,11,4,0.2,0],
-  ["Griech. Joghurt (10%)",121,4.6,3.8,10,0], ["Hüttenkäse",102,12,3.3,4.3,0],
-  ["Milch (1,5%)",47,3.4,4.9,1.5,0], ["Whey-Pulver",380,78,6,5,1],
-  ["Gouda",356,25,2,28,0], ["Tofu",76,8,1.9,4.8,0.3],
-  ["Linsen (gekocht)",116,9,20,0.4,8], ["Kidneybohnen",127,8.7,22,0.5,6.4],
-  ["Brokkoli",35,2.8,7,0.4,2.6], ["Spinat",23,2.9,3.6,0.4,2.2],
-  ["Paprika",31,1,6,0.3,2.1], ["Banane",89,1.1,23,0.3,2.6],
-  ["Apfel",52,0.3,14,0.2,2.4], ["Beeren (gemischt)",50,0.7,12,0.3,3],
-  ["Avocado",160,2,9,15,7], ["Mandeln",579,21,22,50,12.5],
-  ["Erdnussbutter",588,25,20,50,6], ["Olivenöl",884,0,0,100,0],
-  ["Protein-Riegel",380,30,35,12,5]
+  // --- Fleisch & Fisch ---
+  ["Hähnchenbrust",165,31,0,3.6,0,"Fleisch & Fisch"],
+  ["Putenbrust",111,24,0,1.5,0,"Fleisch & Fisch"],
+  ["Hähnchenschenkel (o. Haut)",177,24,0,9,0,"Fleisch & Fisch"],
+  ["Rinderhack (5%)",137,21,0,5,0,"Fleisch & Fisch"],
+  ["Rindersteak (mager)",158,26,0,5,0,"Fleisch & Fisch"],
+  ["Schweinefilet",143,21,0,6,0,"Fleisch & Fisch"],
+  ["Lachs",208,20,0,13,0,"Fleisch & Fisch"],
+  ["Forelle",119,18,0,5,0,"Fleisch & Fisch"],
+  ["Kabeljau",82,18,0,0.7,0,"Fleisch & Fisch"],
+  ["Thunfisch (Dose, Wasser)",116,26,0,1,0,"Fleisch & Fisch"],
+  ["Garnelen",99,24,0.2,0.3,0,"Fleisch & Fisch"],
+  ["Tofu",76,8,1.9,4.8,0.3,"Fleisch & Fisch"],
+  ["Seitan",122,21,4,2,1,"Fleisch & Fisch"],
+  // --- Molkerei & Eier ---
+  ["Ei",155,13,1.1,11,0,"Molkerei & Eier"],
+  ["Eiklar",52,11,0.7,0.2,0,"Molkerei & Eier"],
+  ["Magerquark",67,12,4,0.3,0,"Molkerei & Eier"],
+  ["Quark (20%)",109,12,3,7,0,"Molkerei & Eier"],
+  ["Skyr",63,11,4,0.2,0,"Molkerei & Eier"],
+  ["Griech. Joghurt (10%)",121,4.6,3.8,10,0,"Molkerei & Eier"],
+  ["Hüttenkäse",102,12,3.3,4.3,0,"Molkerei & Eier"],
+  ["Harzer Käse",125,30,0,0.7,0,"Molkerei & Eier"],
+  ["Mozzarella",280,22,2.2,21,0,"Molkerei & Eier"],
+  ["Feta",264,14,4,21,0,"Molkerei & Eier"],
+  ["Gouda",356,25,2,28,0,"Molkerei & Eier"],
+  ["Milch (1,5%)",47,3.4,4.9,1.5,0,"Molkerei & Eier"],
+  ["Buttermilch",37,3.5,4,0.5,0,"Molkerei & Eier"],
+  ["Proteinpudding (fertig)",80,8,9,1.5,0,"Molkerei & Eier"],
+  // --- Kohlenhydrate ---
+  ["Reis (gekocht)",130,2.7,28,0.3,0.4,"Kohlenhydrate"],
+  ["Vollkornreis (gekocht)",111,2.6,23,0.9,1.8,"Kohlenhydrate"],
+  ["Nudeln (gekocht)",158,5.8,31,0.9,1.8,"Kohlenhydrate"],
+  ["Vollkornnudeln (gekocht)",124,5,27,0.9,4,"Kohlenhydrate"],
+  ["Quinoa (gekocht)",120,4.4,21,1.9,2.8,"Kohlenhydrate"],
+  ["Couscous (gekocht)",112,3.8,23,0.2,1.4,"Kohlenhydrate"],
+  ["Kartoffeln (gekocht)",86,1.9,20,0.1,1.8,"Kohlenhydrate"],
+  ["Süßkartoffel",86,1.6,20,0.1,3,"Kohlenhydrate"],
+  ["Pommes (Ofen)",150,2.5,24,5,3,"Kohlenhydrate"],
+  ["Haferflocken",370,13,59,7,10,"Kohlenhydrate"],
+  ["Müsli (Basis)",360,9,65,6,8,"Kohlenhydrate"],
+  ["Vollkornbrot",247,8.5,41,3.5,7,"Kohlenhydrate"],
+  ["Brötchen (Weizen)",280,9,53,2.5,3,"Kohlenhydrate"],
+  ["Vollkornwrap",297,9,49,6,5,"Kohlenhydrate"],
+  ["Knäckebrot",350,10,67,2.5,15,"Kohlenhydrate"],
+  ["Reiswaffeln",387,8,80,3,3,"Kohlenhydrate"],
+  ["Linsen (gekocht)",116,9,20,0.4,8,"Kohlenhydrate"],
+  ["Kichererbsen (gekocht)",164,8.9,27,2.6,7.6,"Kohlenhydrate"],
+  ["Kidneybohnen",127,8.7,22,0.5,6.4,"Kohlenhydrate"],
+  // --- Gemüse ---
+  ["Brokkoli",35,2.8,7,0.4,2.6,"Gemüse"],
+  ["Blumenkohl",25,1.9,5,0.3,2,"Gemüse"],
+  ["Spinat",23,2.9,3.6,0.4,2.2,"Gemüse"],
+  ["Paprika",31,1,6,0.3,2.1,"Gemüse"],
+  ["Tomaten",18,0.9,3.9,0.2,1.2,"Gemüse"],
+  ["Gurke",12,0.7,2,0.1,0.5,"Gemüse"],
+  ["Zucchini",17,1.2,3.1,0.3,1,"Gemüse"],
+  ["Karotten",41,0.9,10,0.2,2.8,"Gemüse"],
+  ["Champignons",22,3.1,3.3,0.3,1,"Gemüse"],
+  ["Grüne Bohnen",31,1.8,7,0.1,3.4,"Gemüse"],
+  ["Mais (Dose)",86,3.2,19,1.2,2.7,"Gemüse"],
+  ["Zwiebeln",40,1.1,9,0.1,1.7,"Gemüse"],
+  // --- Obst ---
+  ["Banane",89,1.1,23,0.3,2.6,"Obst"],
+  ["Apfel",52,0.3,14,0.2,2.4,"Obst"],
+  ["Orange",47,0.9,12,0.1,2.4,"Obst"],
+  ["Beeren (gemischt)",50,0.7,12,0.3,3,"Obst"],
+  ["Erdbeeren",32,0.7,8,0.3,2,"Obst"],
+  ["Trauben",69,0.7,18,0.2,0.9,"Obst"],
+  ["Ananas",50,0.5,13,0.1,1.4,"Obst"],
+  ["Mango",60,0.8,15,0.4,1.6,"Obst"],
+  ["Kiwi",61,1.1,15,0.5,3,"Obst"],
+  ["Datteln (getrocknet)",282,2.5,75,0.4,8,"Obst"],
+  ["Rosinen",299,3.1,79,0.5,3.7,"Obst"],
+  // --- Fette & Nüsse ---
+  ["Avocado",160,2,9,15,7,"Fette & Nüsse"],
+  ["Mandeln",579,21,22,50,12.5,"Fette & Nüsse"],
+  ["Walnüsse",654,15,14,65,6.7,"Fette & Nüsse"],
+  ["Cashewkerne",553,18,30,44,3.3,"Fette & Nüsse"],
+  ["Erdnussbutter",588,25,20,50,6,"Fette & Nüsse"],
+  ["Leinsamen",534,18,29,42,27,"Fette & Nüsse"],
+  ["Chiasamen",486,17,42,31,34,"Fette & Nüsse"],
+  ["Olivenöl",884,0,0,100,0,"Fette & Nüsse"],
+  ["Kokosöl",862,0,0,100,0,"Fette & Nüsse"],
+  ["Butter",717,0.9,0.1,81,0,"Fette & Nüsse"],
+  ["Dunkle Schoko (85%)",599,10,19,50,11,"Fette & Nüsse"],
+  // --- Snacks & Sonstiges ---
+  ["Whey-Pulver",380,78,6,5,1,"Snacks & Sonstiges"],
+  ["Protein-Riegel",380,30,35,12,5,"Snacks & Sonstiges"],
+  ["Proteinshake (fertig, /100ml)",65,6,3,1.5,0,"Snacks & Sonstiges"],
+  ["Haferdrink (/100ml)",45,0.4,7,1.5,0.8,"Snacks & Sonstiges"],
+  ["Honig",304,0.3,82,0,0.2,"Snacks & Sonstiges"],
+  ["Marmelade",250,0.4,60,0.1,1,"Snacks & Sonstiges"],
+  ["Ketchup",112,1.2,26,0.1,0.4,"Snacks & Sonstiges"]
 ];
+// Gruppierte <optgroup>-Optionen, optional gefiltert nach Suchtext
+function foodOptionsHtml(filter){
+  const f = (filter||"").trim().toLowerCase();
+  return FOOD_CATS.map(cat=>{
+    const opts = FOOD_DB.map((x,i)=>({x,i}))
+      .filter(o=>o.x[6]===cat && (!f || o.x[0].toLowerCase().includes(f)))
+      .map(o=>`<option value="${o.i}">${o.x[0]}</option>`).join("");
+    return opts ? `<optgroup label="${cat}">${opts}</optgroup>` : "";
+  }).join("");
+}
 
 // ================= Cloud-Sync Konfiguration =================
 // Firebase-Werte hier eintragen (siehe SETUP-Anleitung). Leer = nur lokal je Geraet.
@@ -347,6 +439,7 @@ let profile = loadKey("coachProfile", {});
 let foods = loadKey("foodLogs", []);        // [{date, n, g, kcal, p, c, f, fib}]
 let weights = loadKey("weightLogs", []);    // [{date, kg}]
 let shopStores = loadKey("shopStores", ["lidl"]);   // ausgewaehlte Supermaerkte (Mehrfachauswahl)
+let meals = loadKey("meals", []);   // feste Gerichte: [{id,n,kcal,p,c,f,fib,items:[{n,g,kcal,p,c,f,fib}]}]
 let syncUpdatedAt = lsGet(dk("updatedAt"), 0) || 0;
 if (!syncUpdatedAt && (logs.length > 1 || foods.length || weights.length || (profile && profile.h)))
   syncUpdatedAt = Date.now();   // vorhandene echte Daten als Quelle markieren
@@ -360,6 +453,7 @@ function saveAll(opts){
   store.set(dk("foodLogs"), JSON.stringify(foods));
   store.set(dk("weightLogs"), JSON.stringify(weights));
   store.set(dk("shopStores"), JSON.stringify(shopStores));
+  store.set(dk("meals"), JSON.stringify(meals));
   if (!opts.silent && !opts.fromRemote){ syncUpdatedAt = Date.now(); pushRemote(); }
   store.set(dk("updatedAt"), JSON.stringify(syncUpdatedAt));
 }
@@ -369,7 +463,7 @@ store.set("coach_migrated", "1");
 // ----- Cloud-Sync (optional, Firebase Firestore) -----
 let db = null, docRef = null, applyingRemote = false, saveTimer = null;
 function setBadge(txt, col){ const b = document.getElementById("syncBadge"); if (b){ b.textContent = txt; b.style.color = col || "var(--muted)"; } }
-function snapshotData(){ return { logs, plan, sick, profile, foods, weights, shopStores, updatedAt: syncUpdatedAt }; }
+function snapshotData(){ return { logs, plan, sick, profile, foods, weights, shopStores, meals, updatedAt: syncUpdatedAt }; }
 function pushRemote(){
   if (!docRef) return;
   clearTimeout(saveTimer);
@@ -387,6 +481,7 @@ function adoptRemote(d){
   if (Array.isArray(d.foods)) foods = d.foods;
   if (Array.isArray(d.weights)) weights = d.weights;
   if (Array.isArray(d.shopStores)) shopStores = d.shopStores;
+  if (Array.isArray(d.meals)) meals = d.meals;
   syncUpdatedAt = d.updatedAt || Date.now();
   saveAll({ fromRemote:true });
   applyingRemote = false;
@@ -438,14 +533,31 @@ function toast(msg){
   t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 1800);
 }
 
-// ================= Ziele aus Profil =================
+// ================= Ziele aus Profil — drei Berechnungsmethoden =================
 // MET-Werte je Trainingsart (kcal-Intensität), additive Arbeits-kcal/Tag
 const TRAIN_MET = { kraft:5, kraft_cardio:6.5, cardio_mod:7.5, cardio_intens:10 };
 const JOB_KCAL  = { sitzend:0, gemischt:150, stehend:300, schwer:500 };
+// Standard-Aktivitätsfaktoren (PAL) nach Mifflin-St-Jeor-Literatur
+const PAL_STEPS = [1.2, 1.375, 1.55, 1.725, 1.9];
+const PAL_NAMES = ["sitzend (kaum Bewegung)","leicht aktiv","moderat aktiv","sehr aktiv","extrem aktiv"];
+// Schätzt den Aktivitätsfaktor aus Trainingstagen, Arbeit und Schritten
+function activityFactor(p){
+  let s = (p.trainDays>=6?1.5 : p.trainDays>=3?1 : p.trainDays>=1?0.5 : 0)
+        + ({sitzend:0,gemischt:0.5,stehend:1.5,schwer:2}[p.job] ?? 0)
+        + ((p.steps??8000)>=12000?1 : (p.steps??8000)>=8000?0.5 : 0);
+  const idx = Math.max(0, Math.min(4, Math.round(s)));
+  return { factor: PAL_STEPS[idx], name: PAL_NAMES[idx], idx };
+}
 function targets(){
   const p = profile;
   if (!p.h || !p.w || !p.age) return null;
   const bmr = 10*p.w + 6.25*p.h - 5*p.age + (p.sex==="f" ? -161 : 5);
+
+  // --- Methode A: Mifflin-St-Jeor × Aktivitätsfaktor (Standard, gut validiert) ---
+  const af = activityFactor(p);
+  const tdeeMifflin = Math.round(bmr * af.factor);
+
+  // --- Methode B: Additives NEAT-Modell (Grundumsatz + Einzelposten) ---
   const tef = bmr * 0.1;                                  // Thermogenese (Verdauung) ~10 %
   const steps = p.steps ?? 8000;
   const stepKcal = steps * p.w * 0.0005;                  // NEAT aus Schritten, gewichtsskaliert
@@ -455,7 +567,21 @@ function targets(){
   const met = TRAIN_MET[p.trainType] ?? 5;
   const perSession = met * 3.5 * p.w / 200 * min;         // kcal pro Trainingseinheit (MET-Formel)
   const trainKcal = days * perSession / 7;                // auf den Tag gemittelt
-  const tdee = Math.round(bmr + tef + stepKcal + jobKcal + trainKcal);
+  const tdeeAdd = Math.round(bmr + tef + stepKcal + jobKcal + trainKcal);
+
+  // --- Methode C: Katch-McArdle (nur mit Körperfett %, gut für definierte Sportler) ---
+  let tdeeKatch = null, lbm = null, rmrKatch = null;
+  if (p.bodyfat && p.bodyfat>3 && p.bodyfat<60){
+    lbm = p.w * (1 - p.bodyfat/100);
+    rmrKatch = 370 + 21.6 * lbm;
+    tdeeKatch = Math.round(rmrKatch * af.factor);
+  }
+
+  const methods = { mifflin:tdeeMifflin, additive:tdeeAdd, katch:tdeeKatch };
+  let method = p.calcMethod || "mifflin";
+  if (method==="katch" && !tdeeKatch) method = "mifflin";   // Fallback ohne Körperfett
+  const tdee = methods[method];
+
   let kcal = tdee + (p.goal ?? 250);
   if (p.ovrOn && p.ovrKcal) kcal = p.ovrKcal;
   const prot = Math.round(p.w * 2);
@@ -463,8 +589,24 @@ function targets(){
   const carbs = Math.max(0, Math.round((kcal - prot*4 - fat*9)/4));
   const fib = Math.round(kcal/1000*14);
   const water = Math.round(p.w*3.5)/100;
-  return {kcal, prot, fat, carbs, fib, water, tdee,
+  return {kcal, prot, fat, carbs, fib, water, tdee, method, methods,
+    af, bmr:Math.round(bmr), lbm:lbm?Math.round(lbm):null, rmrKatch:rmrKatch?Math.round(rmrKatch):null,
     comp:{ bmr:Math.round(bmr), tef:Math.round(tef), step:Math.round(stepKcal), job:Math.round(jobKcal), train:Math.round(trainKcal) }};
+}
+// Klickbare Methoden-Zeile mit ±10 %-Spanne und Auswahl-Markierung
+function methodRow(key, name, val, active, desc){
+  const sel = key===active;
+  const lo = Math.round(val*0.9), hi = Math.round(val*1.1);
+  return `<div class="food-item" data-method="${key}" style="cursor:pointer;border:1px solid ${sel?'var(--accent)':'transparent'};border-radius:8px;padding:8px;${sel?'background:var(--btn-bg-soft,rgba(127,127,127,.06))':''}">
+    <div style="flex:1">
+      <b>${name}${sel?' <span class="badge">gewählt</span>':''}</b>
+      <div class="fi-vals">${desc}</div>
+    </div>
+    <div style="text-align:right;min-width:96px">
+      <div style="font-size:18px;font-weight:700">${val}</div>
+      <div class="fi-vals">${lo}–${hi} kcal</div>
+    </div>
+  </div>`;
 }
 function dayTotals(date){
   const t = {kcal:0,p:0,c:0,f:0,fib:0};
@@ -573,7 +715,7 @@ document.querySelectorAll("[data-sub]").forEach(b => b.onclick = () => {
 document.querySelectorAll("[data-fsub]").forEach(b => b.onclick = () => {
   document.querySelectorAll("[data-fsub]").forEach(x=>x.classList.remove("active"));
   b.classList.add("active");
-  ["today","stats","shop"].forEach(v => document.getElementById("fview-"+v).style.display = v===b.dataset.fsub ? "" : "none");
+  ["today","meals","stats","shop"].forEach(v => document.getElementById("fview-"+v).style.display = v===b.dataset.fsub ? "" : "none");
   renderActiveFoodSub();
 });
 function renderActiveTrainSub(){
@@ -586,6 +728,7 @@ function renderActiveTrainSub(){
 function renderActiveFoodSub(){
   const sub = document.querySelector("[data-fsub].active").dataset.fsub;
   if (sub==="today") renderFoodToday();
+  if (sub==="meals") renderMeals();
   if (sub==="stats") renderFoodStats();
   if (sub==="shop") renderShopping();
 }
@@ -858,11 +1001,22 @@ function renderFoodToday(){
         macroBar("Ballaststoffe", tt.fib, tg.fib, "g")
       : '<div class="empty">Leg im Tab <b>Profil</b> deine Körperdaten an, dann siehst du hier deine Tagesziele.</div>'}
     </div>
+    ${meals.length ? `<div class="card">
+      <div class="ex-name" style="margin-bottom:8px">Festes Gericht loggen</div>
+      <div class="row">
+        <select id="mealLogSel" style="max-width:230px">
+          ${meals.map(m=>`<option value="${m.id}">${m.n} · ${Math.round(m.kcal)} kcal / ${Math.round(m.p)}g P</option>`).join("")}
+        </select>
+        <button class="btn" id="mealLogAdd">+ Gericht loggen</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin:6px 0 0">Neue Gerichte (z.B. Shake) legst du im Tab <b>Gerichte</b> an.</p>
+    </div>` : ""}
     <div class="card">
       <div class="ex-name" style="margin-bottom:8px">Lebensmittel hinzufügen</div>
       <div class="row">
+        <input type="text" id="foodSearch" placeholder="Suchen…" style="width:120px">
         <select id="foodSel" style="max-width:230px">
-          ${FOOD_DB.map((f,i)=>`<option value="${i}">${f[0]}</option>`).join("")}
+          ${foodOptionsHtml("")}
           <option value="custom">Eigenes / vom Foto (Werte selbst eingeben)</option>
         </select>
         <input type="number" id="foodG" placeholder="g" style="width:80px">
@@ -894,6 +1048,18 @@ function renderFoodToday(){
   document.getElementById("foodSel").onchange = e =>
     document.getElementById("customFood").style.display = e.target.value==="custom" ? "" : "none";
   document.getElementById("foodAdd").onclick = addFood;
+  document.getElementById("foodSearch").oninput = e => {
+    const sel = document.getElementById("foodSel");
+    sel.innerHTML = foodOptionsHtml(e.target.value) + '<option value="custom">Eigenes / vom Foto (Werte selbst eingeben)</option>';
+    document.getElementById("customFood").style.display = "none";
+  };
+  const mla = document.getElementById("mealLogAdd");
+  if (mla) mla.onclick = () => logMeal(document.getElementById("mealLogSel").value);
+}
+function logMeal(id){
+  const m = meals.find(x=>x.id===id); if (!m) return;
+  foods.push({ date:foodDate, n:m.n, g:null, kcal:m.kcal, p:m.p, c:m.c, f:m.f, fib:m.fib, meal:true });
+  saveAll(); renderFoodToday(); toast(m.n + " geloggt");
 }
 function addFood(){
   const sel = document.getElementById("foodSel").value;
@@ -912,6 +1078,124 @@ function addFood(){
   foods.push(entry); saveAll(); renderFoodToday(); toast("Eingetragen");
 }
 window.delFood = function(i){ foods.splice(i,1); saveAll(); renderFoodToday(); };
+
+// ================= Ernährung: Feste Gerichte (Rezept-Baukasten) =================
+let mealDraft = { id:null, n:"", items:[] };
+function mealTotals(items){
+  const t = {kcal:0,p:0,c:0,f:0,fib:0};
+  items.forEach(x=>{ t.kcal+=x.kcal; t.p+=x.p; t.c+=x.c; t.f+=x.f; t.fib+=x.fib; });
+  return t;
+}
+function renderMeals(){
+  const el = document.getElementById("fview-meals");
+  const dt = mealTotals(mealDraft.items);
+  const saved = meals.map(m=>`
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div><b>${m.n}</b>
+          <div class="fi-vals">${Math.round(m.kcal)} kcal · ${Math.round(m.p)}g P · ${Math.round(m.c)}g KH · ${Math.round(m.f)}g F · ${Math.round(m.fib*10)/10}g B</div>
+          <div class="fi-vals" style="margin-top:4px">${m.items.map(it=>it.n+(it.g?` ${it.g}g`:"")).join(" + ")}</div>
+        </div>
+        <div class="row" style="margin:0;gap:6px">
+          <button class="btn small" onclick="logMealToday('${m.id}')">Heute loggen</button>
+          <button class="btn small" onclick="mealEdit('${m.id}')">Bearbeiten</button>
+          <button class="btn small danger" onclick="mealDelete('${m.id}')">Löschen</button>
+        </div>
+      </div>
+    </div>`).join("");
+  el.innerHTML = `
+    <div class="card">
+      <div class="ex-name" style="margin-bottom:4px">${mealDraft.id?"Gericht bearbeiten":"Neues Gericht anlegen"}</div>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Zutaten zusammenstellen (z.B. Shake = Milch + Whey + Banane). Makros werden automatisch summiert — danach 1-Klick-Logging.</p>
+      <div class="row"><input id="mName" placeholder="Name des Gerichts (z.B. Morgen-Shake)" style="flex:1;min-width:180px" value="${mealDraft.n.replace(/"/g,'&quot;')}"></div>
+      <div class="row" style="margin-top:6px">
+        <input type="text" id="mSearch" placeholder="Suchen…" style="width:110px">
+        <select id="mSel" style="max-width:210px">${foodOptionsHtml("")}<option value="custom">Eigenes (Werte selbst)</option></select>
+        <input type="number" id="mG" placeholder="g/ml" style="width:80px">
+        <button class="btn small" id="mAdd">+ Zutat</button>
+      </div>
+      <div id="mCustom" style="display:none;margin-top:6px">
+        <div class="row">
+          <input id="mcN" placeholder="Name" style="flex:1;min-width:140px">
+          <input type="number" id="mcKcal" placeholder="kcal" style="width:70px">
+          <input type="number" id="mcP" placeholder="P" style="width:55px">
+          <input type="number" id="mcC" placeholder="KH" style="width:55px">
+          <input type="number" id="mcF" placeholder="F" style="width:55px">
+          <input type="number" id="mcFib" placeholder="B" style="width:55px">
+        </div>
+      </div>
+      ${mealDraft.items.length ? `<div style="margin-top:10px">${mealDraft.items.map((it,i)=>`
+        <div class="food-item">
+          <div><b>${it.n}</b>${it.g?` · ${it.g} g`:""}<div class="fi-vals">${Math.round(it.kcal)} kcal · ${Math.round(it.p)}g P · ${Math.round(it.c)}g KH · ${Math.round(it.f)}g F</div></div>
+          <button class="btn danger small" onclick="mealRemoveItem(${i})">Entf.</button>
+        </div>`).join("")}
+        <div class="food-item" style="border-top:1px solid var(--border)"><div><b>Summe Gericht</b><div class="fi-vals">${Math.round(dt.kcal)} kcal · ${Math.round(dt.p)}g P · ${Math.round(dt.c)}g KH · ${Math.round(dt.f)}g F · ${Math.round(dt.fib*10)/10}g B</div></div></div>
+        </div>` : '<p style="font-size:12px;color:var(--muted);margin-top:10px">Noch keine Zutaten.</p>'}
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="mSave">${mealDraft.id?"Änderungen speichern":"Gericht speichern"}</button>
+        ${mealDraft.id||mealDraft.items.length?'<button class="btn small" id="mCancel">Zurücksetzen</button>':""}
+      </div>
+    </div>
+    ${meals.length ? `<div class="ex-name" style="margin:4px 0 8px">Gespeicherte Gerichte</div>${saved}` : '<div class="card empty">Noch keine festen Gerichte. Leg oben dein erstes an (z.B. Shake).</div>'}`;
+
+  document.getElementById("mSearch").oninput = e => {
+    document.getElementById("mSel").innerHTML = foodOptionsHtml(e.target.value) + '<option value="custom">Eigenes (Werte selbst)</option>';
+    document.getElementById("mCustom").style.display = "none";
+  };
+  document.getElementById("mSel").onchange = e =>
+    document.getElementById("mCustom").style.display = e.target.value==="custom" ? "" : "none";
+  document.getElementById("mName").oninput = e => { mealDraft.n = e.target.value; };
+  document.getElementById("mAdd").onclick = mealAddItem;
+  document.getElementById("mSave").onclick = mealSave;
+  const mc = document.getElementById("mCancel");
+  if (mc) mc.onclick = () => { mealDraft = {id:null,n:"",items:[]}; renderMeals(); };
+}
+function mealAddItem(){
+  const sel = document.getElementById("mSel").value;
+  let it;
+  if (sel==="custom"){
+    const g = id => +document.getElementById(id).value || 0;
+    const n = (document.getElementById("mcN").value||"").trim() || "Zutat";
+    it = { n, g:null, kcal:g("mcKcal"), p:g("mcP"), c:g("mcC"), f:g("mcF"), fib:g("mcFib") };
+    if (!it.kcal && !it.p){ alert("Bitte mindestens kcal oder Protein angeben."); return; }
+  } else {
+    const grams = +document.getElementById("mG").value;
+    if (!grams || grams<=0){ alert("Bitte Gramm/ml angeben."); return; }
+    const f = FOOD_DB[+sel], k = grams/100;
+    it = { n:f[0], g:grams, kcal:f[1]*k, p:f[2]*k, c:f[3]*k, f:f[4]*k, fib:f[5]*k };
+  }
+  mealDraft.n = (document.getElementById("mName").value||"").trim();
+  mealDraft.items.push(it); renderMeals();
+}
+window.mealRemoveItem = function(i){ mealDraft.items.splice(i,1); renderMeals(); };
+function mealSave(){
+  mealDraft.n = (document.getElementById("mName").value||"").trim();
+  if (!mealDraft.n){ alert("Bitte einen Namen für das Gericht eingeben."); return; }
+  if (!mealDraft.items.length){ alert("Bitte mindestens eine Zutat hinzufügen."); return; }
+  const t = mealTotals(mealDraft.items);
+  const rec = { id:mealDraft.id||("m"+Date.now()), n:mealDraft.n, items:mealDraft.items.slice(),
+    kcal:t.kcal, p:t.p, c:t.c, f:t.f, fib:t.fib };
+  const idx = meals.findIndex(m=>m.id===rec.id);
+  if (idx>=0) meals[idx] = rec; else meals.push(rec);
+  mealDraft = {id:null,n:"",items:[]};
+  saveAll(); renderMeals(); toast("Gericht gespeichert");
+}
+window.mealEdit = function(id){
+  const m = meals.find(x=>x.id===id); if (!m) return;
+  mealDraft = { id:m.id, n:m.n, items:m.items.map(x=>({...x})) };
+  renderMeals(); window.scrollTo(0,0);
+};
+window.mealDelete = function(id){
+  if (!confirm("Dieses Gericht löschen?")) return;
+  meals = meals.filter(m=>m.id!==id);
+  if (mealDraft.id===id) mealDraft = {id:null,n:"",items:[]};
+  saveAll(); renderMeals();
+};
+window.logMealToday = function(id){
+  const m = meals.find(x=>x.id===id); if (!m) return;
+  foods.push({ date:today(), n:m.n, g:null, kcal:m.kcal, p:m.p, c:m.c, f:m.f, fib:m.fib, meal:true });
+  saveAll(); toast(m.n + " heute geloggt");
+};
 
 // ================= Ernährung: Statistik =================
 function renderFoodStats(){
@@ -1018,6 +1302,7 @@ function renderProfile(){
         <div><label>Geschlecht</label><select id="pSex">
           <option value="m"${p.sex!=="f"?" selected":""}>männlich</option>
           <option value="f"${p.sex==="f"?" selected":""}>weiblich</option></select></div>
+        <div><label>Körperfett % (optional)</label><input type="number" step="0.5" min="3" max="60" id="pBf" placeholder="z.B. 15" value="${p.bodyfat||""}"></div>
         <div><label>Schritte/Tag (Ø, inkl. Arbeit)</label><input type="number" id="pSteps" min="0" max="40000" step="500" value="${p.steps??8000}"></div>
         <div><label>Trainingstage/Woche</label><input type="number" id="pTDays" min="0" max="14" value="${p.trainDays??4}"></div>
         <div><label>Trainingsart</label><select id="pTType">
@@ -1050,7 +1335,17 @@ function renderProfile(){
       <button class="btn" id="pSave" style="margin-top:8px">Profil speichern</button>
     </div>
     ${tg ? `<div class="card">
-      <div class="ex-name" style="margin-bottom:10px">Deine Tagesziele</div>
+      <div class="ex-name" style="margin-bottom:4px">Methodenvergleich — Erhaltungskalorien</div>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Drei anerkannte Berechnungswege. Wähle, welcher für dein Ziel maßgeblich ist. Spanne zeigt, wie unsicher jede Schätzung ist (±10 %).</p>
+      ${methodRow("mifflin", "Mifflin-St-Jeor × Aktivität", tg.methods.mifflin, tg.method, `Grundumsatz ${tg.bmr} × Faktor ${String(tg.af.factor).replace('.',',')} (${tg.af.name}). Wissenschaftlich am besten validiert, meist die konservativste Zahl.`)}
+      ${methodRow("additive", "Additives NEAT-Modell", tg.methods.additive, tg.method, `Grundumsatz ${tg.comp.bmr} + Verdauung ${tg.comp.tef} + Schritte ${tg.comp.step} + Arbeit ${tg.comp.job} + Training ${tg.comp.train}. Detailliert, kann Aktivität aber doppelt zählen → tendenziell höher.`)}
+      ${tg.methods.katch
+        ? methodRow("katch", "Katch-McArdle × Aktivität", tg.methods.katch, tg.method, `Fettfreie Masse ${tg.lbm} kg → Ruheumsatz ${tg.rmrKatch} × Faktor ${String(tg.af.factor).replace('.',',')}. Am genauesten, wenn dein Körperfett-% stimmt.`)
+        : `<div class="food-item" style="opacity:.55"><div><b>Katch-McArdle × Aktivität</b><div class="fi-vals">Körperfett % oben eintragen, dann verfügbar (für Definierte am genauesten).</div></div></div>`}
+      <p style="font-size:12px;color:var(--muted);margin-top:10px">Quellen: Mifflin MD et al. 1990 (Am J Clin Nutr) · Aktivitätsfaktoren 1,2–1,9 (doubly-labeled-water-validiert) · Katch & McArdle (fettfreie Masse). Alle Methoden sind Schätzungen — die <b>Waage über 2–3 Wochen</b> ist die eigentliche Wahrheit.</p>
+    </div>
+    <div class="card">
+      <div class="ex-name" style="margin-bottom:10px">Deine Tagesziele <span style="font-weight:400;color:var(--muted);font-size:13px">(Methode: ${({mifflin:"Mifflin × Aktivität",additive:"Additiv NEAT",katch:"Katch-McArdle"})[tg.method]})</span></div>
       <div class="tgt-grid">
         ${stat(tg.tdee+" kcal","Erhaltung (TDEE)")}
         ${stat(tg.kcal+" kcal", p.ovrOn ? "Ziel (manuell)" : "Ziel-Kalorien")}
@@ -1060,13 +1355,15 @@ function renderProfile(){
         ${stat(tg.fib+" g","Ballaststoffe")}
         ${stat("~"+tg.water+" l","Wasser")}
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-top:10px">Zusammensetzung Erhaltung (kcal/Tag): Grundumsatz ${tg.comp.bmr} + Verdauung ${tg.comp.tef} + Schritte ${tg.comp.step} + Arbeit ${tg.comp.job} + Training ${tg.comp.train}.</p>
-      <p style="font-size:12px;color:var(--muted);margin-top:6px">Modell: Mifflin-St-Jeor (Grundumsatz) + Schritte- & Trainings-Schätzung (MET) + Ziel-Anpassung. Protein bewusst hoch für Muskelaufbau. Richtwerte — bei Gewichtsänderung über 2–3 Wochen nachjustieren.</p>
-    </div>` : '<div class="card empty">Fülle die Körperdaten aus und speichere — dann erscheinen hier deine Tagesziele.</div>'}`;
+      <p style="font-size:12px;color:var(--muted);margin-top:10px">Ziel = Erhaltung ${tg.tdee} ${(p.goal??250)>=0?"+":"−"} ${Math.abs(p.goal??250)} kcal (${p.ovrOn?"manuell überschrieben":"Ziel-Einstellung"}). Protein bewusst hoch für Muskelaufbau. Bei Gewichtsänderung über 2–3 Wochen nachjustieren.</p>
+    </div>` : '<div class="card empty">Fülle die Körperdaten aus und speichere — dann erscheinen hier deine Tagesziele samt Methodenvergleich.</div>'}`;
   document.getElementById("pOvr").onchange = e =>
     document.getElementById("ovrRow").style.display = e.target.checked ? "flex" : "none";
   document.getElementById("pOvrKcal").oninput = e =>
     document.getElementById("ovrVal").textContent = e.target.value + " kcal";
+  document.querySelectorAll("[data-method]").forEach(b => b.onclick = () => {
+    profile.calcMethod = b.dataset.method; saveAll(); renderProfile();
+  });
   document.getElementById("pSave").onclick = () => {
     profile = {
       h:+document.getElementById("pH").value || null,
@@ -1079,6 +1376,8 @@ function renderProfile(){
       trainMin:+document.getElementById("pTMin").value || 0,
       job:document.getElementById("pJob").value,
       goal:+document.getElementById("pGoal").value,
+      bodyfat:+document.getElementById("pBf").value || null,
+      calcMethod:profile.calcMethod || "mifflin",
       ovrOn:document.getElementById("pOvr").checked,
       ovrKcal:+document.getElementById("pOvrKcal").value || null
     };
@@ -1200,7 +1499,7 @@ document.getElementById("dataBtn").onclick = () => {
   document.getElementById("dataDlg").showModal();
 };
 document.getElementById("expBtn").onclick = () => {
-  document.getElementById("dataTxt").value = JSON.stringify({coach:2, exportedAt:new Date().toISOString(), logs, sick, plan, profile, foods, weights, shopStores});
+  document.getElementById("dataTxt").value = JSON.stringify({coach:2, exportedAt:new Date().toISOString(), logs, sick, plan, profile, foods, weights, shopStores, meals});
 };
 document.getElementById("copyBtn").onclick = async () => {
   const ta = document.getElementById("dataTxt");
@@ -1241,6 +1540,10 @@ document.getElementById("impBtn").onclick = () => {
     weights.sort((a,b)=>a.date.localeCompare(b.date));
   }
   if (Array.isArray(d.shopStores)) shopStores = d.shopStores;
+  if (Array.isArray(d.meals)){
+    const mHave = new Set(meals.map(m=>m.id));
+    d.meals.forEach(m => { if (!mHave.has(m.id)) meals.push(m); });
+  }
   if ((Array.isArray(d.plan) && d.plan.length || d.profile) && confirm("Auch Plan & Profil aus dem Import übernehmen?")){
     if (Array.isArray(d.plan) && d.plan.length) plan = d.plan;
     if (d.profile && d.profile.h) profile = d.profile;
