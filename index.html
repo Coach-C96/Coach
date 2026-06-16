@@ -120,6 +120,27 @@
   .prof-grid label { display:block; margin-bottom:4px; }
   .prof-grid input, .prof-grid select { width:100%; }
   .tgt-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px; }
+  .pool-item { display:flex; gap:10px; align-items:flex-start; padding:9px 6px; border-bottom:1px solid var(--soft); }
+  .pool-item button { white-space:nowrap; }
+  .warmup { background:var(--badge-bg); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+  .warmup ul { margin:6px 0 0 18px; }
+  .warmup li { font-size:13px; line-height:1.5; margin-bottom:3px; }
+  .warmup .wu-neck { margin-top:8px; font-size:12px; color:var(--warn-fg); background:var(--warn-bg); border-radius:8px; padding:7px 10px; }
+  .rest-bar { display:flex; flex-direction:column; gap:8px; }
+  .rest-presets { display:flex; gap:6px; flex-wrap:wrap; }
+  .rest-presets .btn.small { background:var(--soft); }
+  .rest-presets .btn.small.on { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+  .rest-time { font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:.5px; }
+  .rest-track { height:8px; border-radius:6px; background:var(--bar-bg); overflow:hidden; }
+  .rest-fill { height:100%; width:100%; border-radius:6px; background:var(--accent); transition:width .25s linear; }
+  .set-rest-btn { background:var(--soft); color:var(--text); border:1px solid var(--border); border-radius:8px; font-size:12px; padding:5px 10px; cursor:pointer; }
+  .upload-zone { border:2px dashed var(--border); border-radius:12px; padding:22px; text-align:center; color:var(--muted); font-size:13px; cursor:pointer; transition:border-color .15s, background .15s; }
+  .upload-zone.drag { border-color:var(--accent); background:var(--soft); }
+  .food-result { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid var(--soft); cursor:pointer; font-size:14px; }
+  .food-result:hover { background:var(--soft); }
+  .food-result .fr-macro { font-size:12px; color:var(--muted); }
+  .food-results { max-height:230px; overflow:auto; border:1px solid var(--border); border-radius:8px; margin-top:8px; }
+  .qty-panel { border:1px solid var(--accent); border-radius:10px; padding:12px; margin-top:10px; background:var(--soft); }
 </style>
 </head>
 <body>
@@ -223,6 +244,16 @@
     <button class="btn small" onclick="document.getElementById('genDlg').close()">Schließen</button>
   </div>
   <div id="gPreview" style="font-size:13px;max-height:300px;overflow:auto"></div>
+</dialog>
+
+<dialog id="poolDlg" style="width:94%;max-width:560px">
+  <div class="ex-name" style="margin-bottom:4px">Übung ansetzen an: <span id="poolDayName" style="color:var(--accent)"></span></div>
+  <p style="font-size:12px;color:var(--muted);margin:0 0 8px">Wähle aus dem Pool — jede Übung mit kurzer Erklärung, warum sie sich für dich lohnt. Brust & Nacken sind als Priorität markiert.</p>
+  <input type="text" id="poolSearch" placeholder="Übung oder Gruppe suchen…" style="width:100%;margin-bottom:6px">
+  <div id="poolList" style="max-height:52vh;overflow:auto"></div>
+  <div class="row" style="margin-top:10px">
+    <button class="btn small" onclick="document.getElementById('poolDlg').close(); renderPlan();">Fertig</button>
+  </div>
 </dialog>
 
 <dialog id="dataDlg" style="width:90%">
@@ -393,6 +424,140 @@ function foodOptionsHtml(filter){
   }).join("");
 }
 
+// ============ Einheiten-System fuer Mengen-Eingabe ============
+const UNIT_LIST = ["g","ml","Portion","Stück","Tasse","EL","TL"];
+// Generische Gramm je 1 Einheit (Fallback)
+const UNIT_G = { g:1, ml:1, Portion:150, "Stück":100, Tasse:240, EL:15, TL:5 };
+// Lebensmittel-spezifische Gewichte fuer Portion/Stück/Tasse (Richtwerte)
+const PORTION_G = {
+  "Ei":{ "Stück":60, Portion:120 }, "Eiklar":{ "Stück":33 },
+  "Banane":{ "Stück":120, Portion:120 }, "Apfel":{ "Stück":150 }, "Orange":{ "Stück":140 },
+  "Kiwi":{ "Stück":75 }, "Mango":{ "Stück":200 }, "Datteln (getrocknet)":{ "Stück":8 },
+  "Hähnchenbrust":{ Portion:150, "Stück":150 }, "Putenbrust":{ Portion:150 },
+  "Lachs":{ Portion:140 }, "Forelle":{ Portion:140 }, "Kabeljau":{ Portion:150 },
+  "Reis (gekocht)":{ Portion:200, Tasse:160 }, "Vollkornreis (gekocht)":{ Portion:200, Tasse:160 },
+  "Nudeln (gekocht)":{ Portion:200, Tasse:140 }, "Vollkornnudeln (gekocht)":{ Portion:200 },
+  "Haferflocken":{ Portion:60, Tasse:90, EL:10 }, "Magerquark":{ Portion:250, EL:30 },
+  "Skyr":{ Portion:200 }, "Quark (20%)":{ Portion:250 }, "Hüttenkäse":{ Portion:200, EL:30 },
+  "Griech. Joghurt (10%)":{ Portion:170, EL:30 }, "Milch (1,5%)":{ Tasse:240, Portion:200 },
+  "Whey-Pulver":{ Portion:30, EL:15, TL:5 }, "Erdnussbutter":{ EL:16, TL:6, Portion:32 },
+  "Olivenöl":{ EL:13, TL:5 }, "Kokosöl":{ EL:13, TL:5 }, "Butter":{ EL:14, TL:5 },
+  "Honig":{ EL:21, TL:7 }, "Marmelade":{ EL:20, TL:7 }, "Ketchup":{ EL:17, TL:6 },
+  "Mandeln":{ Portion:30, "Stück":1.2 }, "Walnüsse":{ Portion:30 }, "Cashewkerne":{ Portion:30 },
+  "Avocado":{ "Stück":150, Portion:75 }, "Kartoffeln (gekocht)":{ "Stück":120, Portion:200 },
+  "Süßkartoffel":{ "Stück":150, Portion:200 }, "Vollkornbrot":{ "Stück":45, Portion:90 },
+  "Brötchen (Weizen)":{ "Stück":60 }, "Knäckebrot":{ "Stück":10 }, "Reiswaffeln":{ "Stück":7 },
+  "Protein-Riegel":{ "Stück":60, Portion:60 }, "Proteinpudding (fertig)":{ Portion:200, "Stück":200 },
+  "Tomaten":{ "Stück":85 }, "Paprika":{ "Stück":120 }, "Karotten":{ "Stück":60 }, "Zwiebeln":{ "Stück":80 }
+};
+function unitGrams(foodName, unit){
+  const ov = PORTION_G[foodName];
+  if (ov && ov[unit] != null) return ov[unit];
+  return UNIT_G[unit] != null ? UNIT_G[unit] : 1;
+}
+
+// ============ Übungs-Pool (zum Ansetzen an einen Plan-Tag, mit kurzer Erklärung) ============
+// { n:Name, t:Ziel-Schema, why:kurze Erklärung }  · Gruppen mit Prioritäts-Hinweis für Brust/Nacken
+const EX_POOL = {
+  "Brust (Priorität)": [
+    { n:"Brustpresse (Maschine)", t:"4×6-8 · RPE 8", why:"Sichere Hauptübung für dicke Brust — geführt, schont Schulter/Nacken. Dein Brust-Aufbau-Motor." },
+    { n:"Kurzhantel-Bankdrücken", t:"3×8-12 · RPE 8", why:"Große Bewegungsamplitude, dehnt die Brust stark — top Reiz, aber sauber kontrollieren." },
+    { n:"Schrägbankdrücken (Kurzhantel)", t:"3×8-12 · RPE 8", why:"Trifft die obere Brust — genau der Bereich, der optisch Breite gibt." },
+    { n:"Butterfly-Maschine", t:"3×12-15 · RPE 8-9", why:"Isolierte Brust-Kontraktion ohne Trizeps-Limit — perfekt als zweite Brust-Übung." },
+    { n:"Kabel-Flys", t:"3×12-15 · RPE 8", why:"Konstante Spannung über die ganze Bewegung, dehnt schön — guter Pump-Finisher." },
+    { n:"Dips", t:"3×max · RPE 8-9 · früh in der Session!", why:"Massiver Reiz für untere Brust & Trizeps. Bei dir bewusst FRÜH, solange die Schulter frisch ist." },
+    { n:"Liegestütze (Finisher)", t:"2×max", why:"Einfacher Ausbelastungs-Satz am Ende — holt die letzten Fasern raus, überall machbar." }
+  ],
+  "Nacken / Schulter-Prehab (Priorität)": [
+    { n:"Face Pulls", t:"3×15 · RPE 7-8", why:"Die wichtigste Übung für deinen Nacken-Schulter-Komplex: stärkt hintere Schulter & obere Rückenstabilisatoren, zieht die Schultern zurück." },
+    { n:"Band-Außenrotation", t:"3×15 je Seite · RPE 6-7", why:"Kräftigt die Rotatorenmanschette — schützt die Schulter direkt vor dem Drücken. Leicht, sauber, kein Versagen." },
+    { n:"Reverse Flys", t:"3×15 · RPE 7-8", why:"Baut die hintere Schulter auf, balanciert die viele Brustarbeit aus — beugt Nackenproblemen vor." },
+    { n:"YTW-Heben (leicht)", t:"2×10 je Position", why:"Aktiviert die tiefen Schulterblatt-Stabilisatoren — ideal als Prehab im Aufwärmen oder am Ende." },
+    { n:"Kurzhantel-Shrugs (leicht)", t:"2×12 · RPE 7", why:"Kontrollierter Trapez-Reiz. Bewusst leicht & ohne Ruck, damit der Nacken nicht überlastet." }
+  ],
+  "Rücken": [
+    { n:"Pull-ups breiter Griff", t:"4×max · RPE 8-9", why:"Beste Übung für Rückenbreite (Lat). Kommt mit Zeit & Protein bei dir zurück." },
+    { n:"Latzug breiter Griff", t:"3×8-12 · RPE 8", why:"Geführte Alternative/Ergänzung zu Pull-ups — gut um Volumen zu steuern." },
+    { n:"Rudern am Kabel (eng)", t:"3×10-12 · RPE 8", why:"Baut Rückendicke auf, trainiert das Zusammenziehen der Schulterblätter — gut für die Haltung." },
+    { n:"Maschinen-Rudern", t:"3×10-12 · RPE 8", why:"Stabil geführt, lässt dich sicher schwer werden ohne den unteren Rücken zu belasten." },
+    { n:"Pull-ups enger Griff", t:"2×max · RPE 8", why:"Mehr Bizeps- und unterer-Lat-Anteil — schöne Ergänzung zum breiten Griff." }
+  ],
+  "Schultern": [
+    { n:"Schulterdrücken (Maschine)", t:"4×10 · RPE 7-8 · nie bis Versagen!", why:"Geführtes Überkopfdrücken — bei dir bewusst kontrolliert und ohne Versagen wegen des Nackens." },
+    { n:"Seitheben (Kurzhantel)", t:"3×12-15 · RPE 8", why:"Macht die Schulter optisch breit (seitlicher Deltamuskel) — gelenkschonend bei leichtem Gewicht." },
+    { n:"Seitheben am Kabel", t:"3×12-15 · RPE 8", why:"Konstante Spannung auch unten — oft besserer Reiz als Kurzhanteln." },
+    { n:"Frontheben", t:"2×12-15 · RPE 7-8", why:"Vordere Schulter gezielt — sparsam einsetzen, die bekommt beim Drücken schon viel ab." }
+  ],
+  "Beine": [
+    { n:"Beinpresse", t:"4×8-12 · RPE 8", why:"Sichere schwere Beinübung ohne Last auf Wirbelsäule/Nacken — dein Quadriceps-Motor." },
+    { n:"Beinbeuger (Maschine)", t:"3×10-12 · RPE 8", why:"Isoliert die hintere Oberschenkel-Muskulatur — wichtig fürs Knie-Gleichgewicht." },
+    { n:"Beinstrecker", t:"3×12-15 · RPE 8-9", why:"Gezielter Quadriceps-Pump, gut zum Vorermüden oder Ausbelasten." },
+    { n:"Rumänisches Kreuzheben (Kurzhantel)", t:"3×8-10 · RPE 8", why:"Stärkt Beinbeuger & Po, baut Hüftstärke — Kurzhantel-Variante schont den Rücken." },
+    { n:"Wadenheben", t:"3×12-15 · RPE 8-9", why:"Waden brauchen hohe Wiederholungen und Spannung am tiefsten Punkt." },
+    { n:"Ausfallschritte (Kurzhantel)", t:"3×10-12 je Bein", why:"Einbeinig — gut für Balance und gleichmäßige Beinentwicklung." }
+  ],
+  "Arme": [
+    { n:"Kurzhantel Bizeps Curls", t:"3×10-12 · RPE 8-9", why:"Klassiker für den Bizeps — volle Kontraktion, sauber ohne Schwung." },
+    { n:"Hammer-Curls", t:"3×10-12 · RPE 8", why:"Trifft Bizeps & Unterarm/Brachialis — macht den Arm dicker." },
+    { n:"Trizeps-Drücken am Kabel", t:"3×12 · RPE 8", why:"Trizeps macht den Großteil des Oberarms aus — konstante Spannung am Kabel." },
+    { n:"Overhead-Trizeps am Kabel", t:"3×12-15 · RPE 8", why:"Dehnt den langen Trizeps-Kopf — wichtig für die Armdicke von hinten." }
+  ],
+  "Core": [
+    { n:"Hängende Beincrunches", t:"4×max", why:"Starker Reiz für die untere Bauchmuskulatur — Beine kontrolliert heben." },
+    { n:"Kabel-Crunches", t:"3×12-15 · RPE 8", why:"Bauch mit Zusatzgewicht trainierbar — wächst wie jeder andere Muskel." },
+    { n:"Plank", t:"3×45-60 s", why:"Stabilisiert die Körpermitte — schützt den Rücken bei allen schweren Übungen." }
+  ]
+};
+
+// ============ Aufwärm-Sessions (je nach Trainingstag, nacken-bewusst) ============
+function warmupFor(dayName){
+  const d = (dayName||"").toLowerCase();
+  const general = [
+    "3–5 Min lockeres Cardio (Rad, Crosstrainer, zügiges Gehen) — Puls hoch, Gelenke warm",
+    "Arm- & Schulterkreisen je 10× vor/zurück, langsam und kontrolliert"
+  ];
+  let title = "Allgemeines Aufwärmen", spec = [];
+  let neck = "";
+  if (/brust|push/.test(d)){
+    title = "Brust-Fokus";
+    spec = [
+      "Liegestütz-Plus 2×10 (unten kurz halten, oben Schulterblätter auseinander) — aktiviert Brust & Serratus",
+      "Band-Außenrotation 2×15 je Seite — schützt die Schulter vor dem Drücken",
+      "1–2 Aufwärmsätze der ersten Übung mit ~50 % und ~70 % des Arbeitsgewichts"
+    ];
+    neck = "Nacken locker lassen, Schultern weg von den Ohren — nicht hochziehen beim Drücken.";
+  } else if (/schulter|nacken/.test(d)){
+    title = "Schulter & Nacken (besonders sorgfältig!)";
+    spec = [
+      "Band-Außenrotation 2×15 je Seite — Rotatorenmanschette wecken",
+      "Face Pulls leicht 2×15 — hintere Schulter & oberer Rücken aktivieren",
+      "YTW-Heben 1×8 je Position (ohne/mit ganz leichtem Gewicht) — Schulterblatt-Stabilisatoren",
+      "Erste Druckübung: 2 leichte Aufwärmsätze, langsam steigern"
+    ];
+    neck = "Dein sensibler Tag: nie bis Versagen, kein Ruck, jederzeit abbrechen wenn der Nacken zwickt. Lieber ein Satz weniger.";
+  } else if (/rücken|pull|bizeps/.test(d)){
+    title = "Rücken-Fokus";
+    spec = [
+      "Band-Pull-aparts 2×15 — oberer Rücken & hintere Schulter wach machen",
+      "Lat-Dehnung/Hängen 2×20 s — Schultern lang machen",
+      "Erste Zug-Übung: 1–2 leichte Aufwärmsätze (z.B. Latzug leicht)"
+    ];
+    neck = "Beim Ziehen die Schulterblätter führen, nicht mit dem Nacken reißen.";
+  } else if (/bein|leg|core/.test(d)){
+    title = "Bein-Fokus";
+    spec = [
+      "Hüftkreisen & 10 tiefe Kniebeugen ohne Gewicht — Hüfte und Knie mobil machen",
+      "Beinpendeln 10× je Seite vor/zurück und seitlich",
+      "Erste Beinübung: 1–2 Aufwärmsätze mit ~50 % und ~70 %"
+    ];
+    neck = "Bei der Beinpresse den Kopf locker an der Lehne lassen, nicht nach vorne drücken.";
+  } else {
+    spec = ["Leichte Aufwärmsätze der ersten Übung (~50 % und ~70 % des Arbeitsgewichts)"];
+    neck = "Schultern locker, Nacken neutral.";
+  }
+  return { title, items: general.concat(spec), neck };
+}
+
 // ================= Cloud-Sync Konfiguration =================
 // Firebase-Werte hier eintragen (siehe SETUP-Anleitung). Leer = nur lokal je Geraet.
 const FIREBASE_CONFIG = {
@@ -440,6 +605,12 @@ let foods = loadKey("foodLogs", []);        // [{date, n, g, kcal, p, c, f, fib}
 let weights = loadKey("weightLogs", []);    // [{date, kg}]
 let shopStores = loadKey("shopStores", ["lidl"]);   // ausgewaehlte Supermaerkte (Mehrfachauswahl)
 let meals = loadKey("meals", []);   // feste Gerichte: [{id,n,kcal,p,c,f,fib,items:[{n,g,kcal,p,c,f,fib}]}]
+let foodUnitMem = loadKey("foodUnitMem", {});   // zuletzt verwendete Einheit je Lebensmittel-Name
+// API-Key + Modell: GERAETE-lokal, NICHT in Sync/Export (Key bleibt nur in diesem Browser)
+function getApiKey(){ return store.get("coach_anthropic_key") || ""; }
+function setApiKey(v){ store.set("coach_anthropic_key", v||""); }
+function getApiModel(){ return store.get("coach_anthropic_model") || "claude-sonnet-4-6"; }
+function setApiModel(v){ store.set("coach_anthropic_model", v||"claude-sonnet-4-6"); }
 let syncUpdatedAt = lsGet(dk("updatedAt"), 0) || 0;
 if (!syncUpdatedAt && (logs.length > 1 || foods.length || weights.length || (profile && profile.h)))
   syncUpdatedAt = Date.now();   // vorhandene echte Daten als Quelle markieren
@@ -454,6 +625,7 @@ function saveAll(opts){
   store.set(dk("weightLogs"), JSON.stringify(weights));
   store.set(dk("shopStores"), JSON.stringify(shopStores));
   store.set(dk("meals"), JSON.stringify(meals));
+  store.set(dk("foodUnitMem"), JSON.stringify(foodUnitMem));
   if (!opts.silent && !opts.fromRemote){ syncUpdatedAt = Date.now(); pushRemote(); }
   store.set(dk("updatedAt"), JSON.stringify(syncUpdatedAt));
 }
@@ -463,7 +635,7 @@ store.set("coach_migrated", "1");
 // ----- Cloud-Sync (optional, Firebase Firestore) -----
 let db = null, docRef = null, applyingRemote = false, saveTimer = null;
 function setBadge(txt, col){ const b = document.getElementById("syncBadge"); if (b){ b.textContent = txt; b.style.color = col || "var(--muted)"; } }
-function snapshotData(){ return { logs, plan, sick, profile, foods, weights, shopStores, meals, updatedAt: syncUpdatedAt }; }
+function snapshotData(){ return { logs, plan, sick, profile, foods, weights, shopStores, meals, foodUnitMem, updatedAt: syncUpdatedAt }; }
 function pushRemote(){
   if (!docRef) return;
   clearTimeout(saveTimer);
@@ -482,6 +654,7 @@ function adoptRemote(d){
   if (Array.isArray(d.weights)) weights = d.weights;
   if (Array.isArray(d.shopStores)) shopStores = d.shopStores;
   if (Array.isArray(d.meals)) meals = d.meals;
+  if (d.foodUnitMem && typeof d.foodUnitMem === "object") foodUnitMem = d.foodUnitMem;
   syncUpdatedAt = d.updatedAt || Date.now();
   saveAll({ fromRemote:true });
   applyingRemote = false;
@@ -786,16 +959,119 @@ function renderLog(){
         <label>Trainingstag:</label><select id="logDay">${plan.map(d=>`<option>${d.day}</option>`).join("")}</select>
       </div>
     </div>
+    <div id="warmupCard"></div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <div class="ex-name" style="margin:0">Pausen-Timer</div>
+        <button class="btn small" id="restToggle">Anzeigen</button>
+      </div>
+      <div id="restBody" style="display:none">
+        <div class="rest-bar">
+          <div class="rest-presets" id="restPresets"></div>
+          <div class="row" style="justify-content:space-between;margin:0">
+            <span class="rest-time" id="restTime">1:30</span>
+            <div class="row" style="margin:0">
+              <button class="btn small" id="restStart">Start</button>
+              <button class="btn small" id="restReset">Reset</button>
+            </div>
+          </div>
+          <div class="rest-track"><div class="rest-fill" id="restFill"></div></div>
+          <p style="font-size:12px;color:var(--muted);margin:0">Nach jedem Satz auf <b>Pause</b> tippen — oder hier direkt starten. Vibriert/piept am Ende.</p>
+        </div>
+      </div>
+    </div>
     <div id="exForms"></div>
     <div class="card">
       <label>Wie hat es sich angefühlt? (Nacken ok? Energie?)</label>
       <textarea id="logNote" placeholder="z.B. Nacken gut, Energie mittel..."></textarea>
     </div>
     <button class="btn" id="saveBtn">Training speichern</button>`;
-  document.getElementById("logDay").onchange = renderExForms;
+  document.getElementById("logDay").onchange = () => { renderWarmup(); renderExForms(); };
   document.getElementById("saveBtn").onclick = saveSession;
+  setupRestTimer();
+  renderWarmup();
   renderExForms();
 }
+function renderWarmup(){
+  const box = document.getElementById("warmupCard");
+  if (!box) return;
+  const dayName = document.getElementById("logDay").value;
+  const w = warmupFor(dayName);
+  box.innerHTML = `<div class="warmup">
+    <div class="ex-name" style="margin-bottom:2px">Aufwärmen · ${w.title}</div>
+    <p style="font-size:12px;color:var(--muted);margin:0">Ca. 6–10 Min, bevor du loslegst — beugt Verletzungen vor und bringt mehr Leistung.</p>
+    <ul>${w.items.map(i=>`<li>${i}</li>`).join("")}</ul>
+    ${w.neck ? `<div class="wu-neck"><b>Nacken-Achtung:</b> ${w.neck}</div>` : ""}
+  </div>`;
+}
+
+// ================= Rest-Timer =================
+const REST_PRESETS = [60, 90, 120, 180];
+let restDur = 90, restRemain = 90, restRunning = false, restTimerId = null, restEndAt = 0;
+function fmtTime(s){ s = Math.max(0, Math.round(s)); return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0"); }
+function restUpdateUI(){
+  const t = document.getElementById("restTime"), f = document.getElementById("restFill");
+  if (!t || !f) return;
+  t.textContent = fmtTime(restRemain);
+  f.style.width = (restDur>0 ? Math.max(0, restRemain/restDur*100) : 0) + "%";
+  document.querySelectorAll("#restPresets .btn").forEach(b => b.classList.toggle("on", +b.dataset.s===restDur && !restRunning));
+}
+function restTick(){
+  restRemain = (restEndAt - Date.now())/1000;
+  if (restRemain <= 0){
+    restRemain = 0; restUpdateUI(); restStop(true);
+    return;
+  }
+  restUpdateUI();
+}
+function restStart(dur){
+  if (dur) { restDur = dur; }
+  restRemain = restDur;
+  restEndAt = Date.now() + restDur*1000;
+  restRunning = true;
+  clearInterval(restTimerId);
+  restTimerId = setInterval(restTick, 250);
+  const body = document.getElementById("restBody"), tog = document.getElementById("restToggle");
+  if (body && body.style.display==="none"){ body.style.display=""; if (tog) tog.textContent="Verbergen"; }
+  restUpdateUI();
+}
+function restStop(finished){
+  restRunning = false;
+  clearInterval(restTimerId); restTimerId = null;
+  if (finished){
+    try { if (navigator.vibrate) navigator.vibrate([200,100,200]); } catch(e){}
+    try {
+      const ctx = new (window.AudioContext||window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination); o.frequency.value = 880; g.gain.value = 0.18;
+      o.start(); setTimeout(()=>{ o.stop(); ctx.close(); }, 320);
+    } catch(e){}
+    toast("Pause vorbei — nächster Satz");
+    restRemain = restDur;
+  }
+  restUpdateUI();
+}
+function setupRestTimer(){
+  const pre = document.getElementById("restPresets");
+  if (!pre) return;
+  pre.innerHTML = REST_PRESETS.map(s=>`<button class="btn small" data-s="${s}">${fmtTime(s)}</button>`).join("");
+  pre.querySelectorAll(".btn").forEach(b => b.onclick = () => { restDur = +b.dataset.s; if (restRunning) restStart(restDur); else { restRemain = restDur; restUpdateUI(); } });
+  document.getElementById("restStart").onclick = () => restRunning ? restStop(false) : restStart(restDur);
+  document.getElementById("restReset").onclick = () => { restStop(false); restRemain = restDur; restUpdateUI(); };
+  document.getElementById("restToggle").onclick = () => {
+    const body = document.getElementById("restBody"), tog = document.getElementById("restToggle");
+    const show = body.style.display==="none";
+    body.style.display = show ? "" : "none";
+    tog.textContent = show ? "Verbergen" : "Anzeigen";
+  };
+  restDur = 90; restRemain = 90; restRunning = false;
+  restUpdateUI();
+}
+window.startRestFromSet = function(){
+  const body = document.getElementById("restBody"), tog = document.getElementById("restToggle");
+  if (body && body.style.display==="none"){ body.style.display=""; if(tog) tog.textContent="Verbergen"; }
+  restStart(restDur);
+};
 function renderExForms(){
   const dayName = document.getElementById("logDay").value;
   const day = plan.find(d=>d.day===dayName) || plan[0];
@@ -815,10 +1091,15 @@ function renderExForms(){
       rows += `<div class="set-row"><span class="set-num">${s+1}</span>
         <input type="number" step="0.5" placeholder="${p.w!==""?p.w:"kg"}" data-f="w"> <span class="unit">kg ×</span>
         <input type="number" placeholder="${p.r!==""?p.r:"Reps"}" data-f="r"> <span class="unit">Reps @</span>
-        <input type="number" step="0.5" min="5" max="10" placeholder="${p.rpe!==""&&p.rpe!=null?p.rpe:"RPE"}" data-f="rpe"></div>`;
+        <input type="number" step="0.5" min="5" max="10" placeholder="${p.rpe!==""&&p.rpe!=null?p.rpe:"RPE"}" data-f="rpe">
+        <button type="button" class="set-rest-btn" onclick="startRestFromSet()" title="Pause starten">Pause</button></div>`;
     }
+    const lo = ex.n.toLowerCase();
+    let prio = "";
+    if (/brust|bankdr|butterfly|dips|fly|liegestütz|incline|schräg/.test(lo)) prio = `<span class="badge pr" style="margin-left:6px">Brust-Prio</span>`;
+    else if (/face pull|außenrot|reverse fly|ytw|shrug|nacken|schulter/.test(lo)) prio = `<span class="badge warn" style="margin-left:6px">Nacken-Achtung</span>`;
     return `<div class="card ex-form" data-ex="${ex.n}">
-      <div class="ex-name">${ex.n}</div>
+      <div class="ex-name">${ex.n}${prio}</div>
       <div class="ex-target">Ziel: ${ex.t}<br><span class="badge">${hint}</span>${cbHint}</div>
       ${rows}
       <button class="btn small" onclick="addSet(this)">+ Satz</button>
@@ -833,7 +1114,8 @@ window.addSet = function(btn){
   div.innerHTML = `<span class="set-num">${n}</span>
     <input type="number" step="0.5" placeholder="kg" data-f="w"> <span class="unit">kg ×</span>
     <input type="number" placeholder="Reps" data-f="r"> <span class="unit">Reps @</span>
-    <input type="number" step="0.5" min="5" max="10" placeholder="RPE" data-f="rpe">`;
+    <input type="number" step="0.5" min="5" max="10" placeholder="RPE" data-f="rpe">
+    <button type="button" class="set-rest-btn" onclick="startRestFromSet()" title="Pause starten">Pause</button>`;
   card.insertBefore(div, btn);
 };
 function saveSession(){
@@ -969,7 +1251,8 @@ function renderPlan(){
           <input value="${e.t.replace(/"/g,'&quot;')}" onchange="editEx(${di},${ei},'t',this.value)">
           <button class="btn danger" onclick="delEx(${di},${ei})">Entf.</button>
         </div>`).join("")}
-      <button class="btn small" onclick="addEx(${di})">+ Übung</button>
+      <button class="btn small" onclick="addEx(${di})">+ Leere Übung</button>
+      <button class="btn small" onclick="openPool(${di})">+ Aus Übungspool</button>
     </div>`).join("") + `
     <div class="row">
       <button class="btn" onclick="openGen()">Plan-Generator</button>
@@ -982,6 +1265,44 @@ window.editDay = (di,v)=>{ plan[di].day = v; saveAll(); };
 window.editEx = (di,ei,f,v)=>{ plan[di].ex[ei][f] = v; saveAll(); };
 window.delEx = (di,ei)=>{ plan[di].ex.splice(ei,1); saveAll(); renderPlan(); };
 window.addEx = di=>{ plan[di].ex.push({n:"Neue Übung", sets:3, t:"3×10 · RPE 8"}); saveAll(); renderPlan(); };
+// --- Übungspool-Picker ---
+let _poolDayIdx = null;
+window.openPool = function(di){
+  _poolDayIdx = di;
+  const dlg = document.getElementById("poolDlg");
+  document.getElementById("poolDayName").textContent = plan[di] ? plan[di].day : "";
+  renderPoolList("");
+  const ps = document.getElementById("poolSearch");
+  ps.value = "";
+  ps.oninput = e => renderPoolList(e.target.value);
+  dlg.showModal();
+};
+function renderPoolList(filter){
+  const f = (filter||"").trim().toLowerCase();
+  const box = document.getElementById("poolList");
+  const have = new Set((_poolDayIdx!=null && plan[_poolDayIdx] ? plan[_poolDayIdx].ex : []).map(e=>e.n));
+  box.innerHTML = Object.keys(EX_POOL).map(grp=>{
+    const rows = EX_POOL[grp].filter(e => !f || e.n.toLowerCase().includes(f) || grp.toLowerCase().includes(f)).map(e=>{
+      const added = have.has(e.n);
+      return `<div class="pool-item">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14px">${e.n} <span style="color:var(--muted);font-weight:400;font-size:12px">· ${e.t}</span></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${e.why}</div>
+        </div>
+        <button class="btn small" ${added?"disabled style='opacity:.5'":""} onclick="addFromPool('${grp.replace(/'/g,"\\'")}','${e.n.replace(/'/g,"\\'")}')">${added?"drin":"+ Ansetzen"}</button>
+      </div>`;
+    }).join("");
+    return rows ? `<div style="margin:12px 0 4px;font-weight:700;font-size:13px;color:var(--accent)">${grp}</div>${rows}` : "";
+  }).join("");
+}
+window.addFromPool = function(grp, name){
+  if (_poolDayIdx==null || !plan[_poolDayIdx]) return;
+  const e = (EX_POOL[grp]||[]).find(x=>x.n===name);
+  if (!e) return;
+  const sets = parseInt(e.t) || 3;
+  plan[_poolDayIdx].ex.push({ n:e.n, sets, t:e.t });
+  saveAll(); renderPoolList(document.getElementById("poolSearch").value); toast(name + " angesetzt");
+};
 window.delDay = di=>{ if(confirm("Diesen Trainingstag löschen?")){ plan.splice(di,1); saveAll(); renderPlan(); } };
 window.addDay = ()=>{ plan.push({day:"Neuer Tag", ex:[{n:"Neue Übung", sets:3, t:"3×10 · RPE 8"}]}); saveAll(); renderPlan(); };
 window.resetPlan = ()=>{ if(confirm("Plan wirklich auf den Standard zurücksetzen? Deine Logs bleiben erhalten.")){ plan = JSON.parse(JSON.stringify(DEFAULT_PLAN)); saveAll(); renderPlan(); } };
@@ -1013,16 +1334,13 @@ function renderFoodToday(){
     </div>` : ""}
     <div class="card">
       <div class="ex-name" style="margin-bottom:8px">Lebensmittel hinzufügen</div>
-      <div class="row">
-        <input type="text" id="foodSearch" placeholder="Suchen…" style="width:120px">
-        <select id="foodSel" style="max-width:230px">
-          ${foodOptionsHtml("")}
-          <option value="custom">Eigenes / vom Foto (Werte selbst eingeben)</option>
-        </select>
-        <input type="number" id="foodG" placeholder="g" style="width:80px">
-        <button class="btn" id="foodAdd">+ Hinzufügen</button>
+      <input type="text" id="foodSearch" placeholder="Lebensmittel suchen (z.B. Hähnchen, Reis, Skyr)…" style="width:100%" autocomplete="off">
+      <div id="foodResults" class="food-results" style="display:none"></div>
+      <div id="qtyPanel"></div>
+      <div style="margin-top:10px">
+        <button class="btn small" id="customToggle">Eigenes Lebensmittel manuell eingeben</button>
       </div>
-      <div id="customFood" style="display:none">
+      <div id="customFood" style="display:none;margin-top:10px">
         <div class="row">
           <input id="cfN" placeholder="Name (z.B. Teller Reis + Hähnchen)" style="flex:1;min-width:180px">
         </div>
@@ -1033,7 +1351,7 @@ function renderFoodToday(){
           <input type="number" id="cfF" placeholder="Fett"> <span style="font-size:12px;color:var(--muted)">g F</span>
           <input type="number" id="cfFib" placeholder="Ballastst."> <span style="font-size:12px;color:var(--muted)">g B</span>
         </div>
-        <p style="font-size:12px;color:var(--muted)">Tipp: Foto vom Essen an Claude schicken, geschätzte Werte hier eintragen.</p>
+        <button class="btn" id="cfAdd" style="margin-top:6px">+ Hinzufügen</button>
       </div>
     </div>
     <div class="card">
@@ -1045,14 +1363,13 @@ function renderFoodToday(){
         </div>`).join("") : '<div class="empty">Noch nichts geloggt.</div>'}
     </div>`;
   document.getElementById("foodDate").onchange = e => { foodDate = e.target.value; renderFoodToday(); };
-  document.getElementById("foodSel").onchange = e =>
-    document.getElementById("customFood").style.display = e.target.value==="custom" ? "" : "none";
-  document.getElementById("foodAdd").onclick = addFood;
-  document.getElementById("foodSearch").oninput = e => {
-    const sel = document.getElementById("foodSel");
-    sel.innerHTML = foodOptionsHtml(e.target.value) + '<option value="custom">Eigenes / vom Foto (Werte selbst eingeben)</option>';
-    document.getElementById("customFood").style.display = "none";
+  _selFoodIdx = null;
+  document.getElementById("foodSearch").oninput = e => renderFoodResults(e.target.value);
+  document.getElementById("customToggle").onclick = () => {
+    const c = document.getElementById("customFood");
+    c.style.display = c.style.display==="none" ? "" : "none";
   };
+  document.getElementById("cfAdd").onclick = addCustomFood;
   const mla = document.getElementById("mealLogAdd");
   if (mla) mla.onclick = () => logMeal(document.getElementById("mealLogSel").value);
 }
@@ -1061,20 +1378,82 @@ function logMeal(id){
   foods.push({ date:foodDate, n:m.n, g:null, kcal:m.kcal, p:m.p, c:m.c, f:m.f, fib:m.fib, meal:true });
   saveAll(); renderFoodToday(); toast(m.n + " geloggt");
 }
-function addFood(){
-  const sel = document.getElementById("foodSel").value;
-  let entry;
-  if (sel==="custom"){
-    const g = id => +document.getElementById(id).value || 0;
-    const n = document.getElementById("cfN").value.trim() || "Eigenes Lebensmittel";
-    entry = { date:foodDate, n, g:null, kcal:g("cfKcal"), p:g("cfP"), c:g("cfC"), f:g("cfF"), fib:g("cfFib") };
-    if (!entry.kcal && !entry.p){ alert("Bitte mindestens kcal oder Protein angeben."); return; }
-  } else {
-    const grams = +document.getElementById("foodG").value;
-    if (!grams || grams<=0){ alert("Bitte Grammzahl angeben."); return; }
-    const f = FOOD_DB[+sel], k = grams/100;
-    entry = { date:foodDate, n:f[0], g:grams, kcal:f[1]*k, p:f[2]*k, c:f[3]*k, f:f[4]*k, fib:f[5]*k };
+// --- Live-Suche + Mengen-Panel ---
+let _selFoodIdx = null;
+function foodMatches(filter){
+  const f = (filter||"").trim().toLowerCase();
+  if (!f) return [];
+  return FOOD_DB.map((x,i)=>({x,i})).filter(o=>o.x[0].toLowerCase().includes(f)).slice(0,12);
+}
+function renderFoodResults(filter){
+  const box = document.getElementById("foodResults");
+  if (!box) return;
+  if (!filter || !filter.trim()){ box.style.display="none"; box.innerHTML=""; return; }
+  const list = foodMatches(filter);
+  if (!list.length){
+    box.style.display=""; box.innerHTML='<div class="food-result" style="cursor:default;color:var(--muted)">Nichts gefunden — nutze unten „Eigenes Lebensmittel manuell eingeben".</div>';
+    return;
   }
+  box.style.display="";
+  box.innerHTML = list.map(o=>`<div class="food-result" onclick="selectFood(${o.i})">
+    <div><b>${o.x[0]}</b><div class="fr-macro">${o.x[1]} kcal · ${o.x[2]} g P / 100 ${/\/100ml|\(\/100ml\)/.test(o.x[0])||/drink|milch|shake/i.test(o.x[0])?"ml":"g"}</div></div>
+    <span class="badge">wählen</span></div>`).join("");
+}
+window.selectFood = function(i){
+  _selFoodIdx = i;
+  document.getElementById("foodResults").style.display = "none";
+  document.getElementById("foodSearch").value = FOOD_DB[i][0];
+  renderQtyPanel();
+};
+function defaultAmount(unit){ return (unit==="g"||unit==="ml") ? 100 : 1; }
+function renderQtyPanel(){
+  const wrap = document.getElementById("qtyPanel");
+  if (!wrap) return;
+  if (_selFoodIdx==null){ wrap.innerHTML=""; return; }
+  const f = FOOD_DB[_selFoodIdx], name = f[0];
+  const isLiquid = /drink|milch|shake|buttermilch/i.test(name);
+  const memUnit = foodUnitMem[name];
+  const unit = (memUnit && UNIT_LIST.includes(memUnit)) ? memUnit : (isLiquid ? "ml" : "g");
+  wrap.innerHTML = `<div class="qty-panel">
+    <div style="font-weight:600;margin-bottom:8px">${name}</div>
+    <div class="row" style="margin-bottom:6px">
+      <input type="number" id="qtyAmount" value="${defaultAmount(unit)}" min="0" step="any" style="width:90px">
+      <select id="qtyUnit">${UNIT_LIST.map(u=>`<option${u===unit?" selected":""}>${u}</option>`).join("")}</select>
+      <button class="btn" id="qtyAdd">+ Hinzufügen</button>
+    </div>
+    <div id="qtyMacros" class="fr-macro"></div>
+  </div>`;
+  const recompute = () => {
+    const a = +document.getElementById("qtyAmount").value || 0;
+    const u = document.getElementById("qtyUnit").value;
+    const grams = a * unitGrams(name, u), k = grams/100;
+    const r1 = x => Math.round(x*10)/10;
+    document.getElementById("qtyMacros").innerHTML =
+      `= <b>${Math.round(f[1]*k)} kcal</b> · ${r1(f[2]*k)} g P · ${r1(f[3]*k)} g KH · ${r1(f[4]*k)} g F · ${r1(f[5]*k)} g B`
+      + (u!=="g" && u!=="ml" ? ` <span style="color:var(--muted)">(≈ ${Math.round(grams)} g)</span>` : "");
+  };
+  document.getElementById("qtyAmount").oninput = recompute;
+  document.getElementById("qtyUnit").onchange = recompute;
+  document.getElementById("qtyAdd").onclick = addSelectedFood;
+  recompute();
+}
+function addSelectedFood(){
+  if (_selFoodIdx==null) return;
+  const f = FOOD_DB[_selFoodIdx], name = f[0];
+  const a = +document.getElementById("qtyAmount").value;
+  const u = document.getElementById("qtyUnit").value;
+  if (!a || a<=0){ alert("Bitte eine Menge eingeben."); return; }
+  const grams = a * unitGrams(name, u), k = grams/100;
+  foods.push({ date:foodDate, n: name + (u!=="g" && u!=="ml" ? ` (${a} ${u})` : ""),
+    g: Math.round(grams*10)/10, kcal:f[1]*k, p:f[2]*k, c:f[3]*k, f:f[4]*k, fib:f[5]*k });
+  foodUnitMem[name] = u;               // letzte Einheit merken
+  saveAll(); renderFoodToday(); toast("Eingetragen");
+}
+function addCustomFood(){
+  const g = id => +document.getElementById(id).value || 0;
+  const n = document.getElementById("cfN").value.trim() || "Eigenes Lebensmittel";
+  const entry = { date:foodDate, n, g:null, kcal:g("cfKcal"), p:g("cfP"), c:g("cfC"), f:g("cfF"), fib:g("cfFib") };
+  if (!entry.kcal && !entry.p){ alert("Bitte mindestens kcal oder Protein angeben."); return; }
   foods.push(entry); saveAll(); renderFoodToday(); toast("Eingetragen");
 }
 window.delFood = function(i){ foods.splice(i,1); saveAll(); renderFoodToday(); };
@@ -1499,7 +1878,7 @@ document.getElementById("dataBtn").onclick = () => {
   document.getElementById("dataDlg").showModal();
 };
 document.getElementById("expBtn").onclick = () => {
-  document.getElementById("dataTxt").value = JSON.stringify({coach:2, exportedAt:new Date().toISOString(), logs, sick, plan, profile, foods, weights, shopStores, meals});
+  document.getElementById("dataTxt").value = JSON.stringify({coach:2, exportedAt:new Date().toISOString(), logs, sick, plan, profile, foods, weights, shopStores, meals, foodUnitMem});
 };
 document.getElementById("copyBtn").onclick = async () => {
   const ta = document.getElementById("dataTxt");
@@ -1540,6 +1919,7 @@ document.getElementById("impBtn").onclick = () => {
     weights.sort((a,b)=>a.date.localeCompare(b.date));
   }
   if (Array.isArray(d.shopStores)) shopStores = d.shopStores;
+  if (d.foodUnitMem && typeof d.foodUnitMem === "object") foodUnitMem = Object.assign({}, foodUnitMem, d.foodUnitMem);
   if (Array.isArray(d.meals)){
     const mHave = new Set(meals.map(m=>m.id));
     d.meals.forEach(m => { if (!mHave.has(m.id)) meals.push(m); });
