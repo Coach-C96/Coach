@@ -141,6 +141,16 @@
   .food-result .fr-macro { font-size:12px; color:var(--muted); }
   .food-results { max-height:230px; overflow:auto; border:1px solid var(--border); border-radius:8px; margin-top:8px; }
   .qty-panel { border:1px solid var(--accent); border-radius:10px; padding:12px; margin-top:10px; background:var(--soft); }
+  .qa-label { font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px; }
+  .qchips { display:flex; gap:8px; flex-wrap:wrap; }
+  .qchip { display:inline-flex; align-items:stretch; border:1px solid var(--border); border-radius:9px; overflow:hidden; background:var(--card); }
+  .qchip-log { border:none; background:transparent; color:var(--text); font-size:13px; font-weight:600; padding:7px 10px; cursor:pointer; }
+  .qchip-amt { color:var(--muted); font-weight:400; font-size:12px; }
+  .qchip-x { border:none; border-left:1px solid var(--border); background:var(--soft); color:var(--muted); font-size:11px; padding:0 9px; cursor:pointer; }
+  .qchip-x:hover { color:var(--accent); }
+  .pchips { display:flex; gap:6px; flex-wrap:wrap; }
+  .pchip { border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:8px; font-size:12px; padding:5px 10px; cursor:pointer; }
+  .pchip:hover { border-color:var(--accent); color:var(--accent); }
 </style>
 </head>
 <body>
@@ -411,7 +421,207 @@ const FOOD_DB = [
   ["Haferdrink (/100ml)",45,0.4,7,1.5,0.8,"Snacks & Sonstiges"],
   ["Honig",304,0.3,82,0,0.2,"Snacks & Sonstiges"],
   ["Marmelade",250,0.4,60,0.1,1,"Snacks & Sonstiges"],
-  ["Ketchup",112,1.2,26,0.1,0.4,"Snacks & Sonstiges"]
+  ["Ketchup",112,1.2,26,0.1,0.4,"Snacks & Sonstiges"],
+  // --- Fleisch & Fisch (Erweiterung) ---
+  ["Hackfleisch gemischt",250,17,0,20,0,"Fleisch & Fisch"],
+  ["Rinderhack (20%)",254,17,0,20,0,"Fleisch & Fisch"],
+  ["Hähnchen-Innenfilet",110,23,0,2,0,"Fleisch & Fisch"],
+  ["Hähnchenschenkel (m. Haut)",215,18,0,15,0,"Fleisch & Fisch"],
+  ["Schweinekotelett",230,21,0,16,0,"Fleisch & Fisch"],
+  ["Rinderfilet",130,21,0,5,0,"Fleisch & Fisch"],
+  ["Kochschinken",110,20,1,3,0,"Fleisch & Fisch"],
+  ["Putenaufschnitt",105,18,1,3,0,"Fleisch & Fisch"],
+  ["Salami",350,22,1,29,0,"Fleisch & Fisch"],
+  ["Bratwurst",297,12,2,27,0,"Fleisch & Fisch"],
+  ["Wiener Würstchen",270,11,1,24,0,"Fleisch & Fisch"],
+  ["Leberkäse",280,12,1,25,0,"Fleisch & Fisch"],
+  ["Frikadelle",240,15,8,17,1,"Fleisch & Fisch"],
+  ["Hähnchen-Nuggets",250,14,16,15,1,"Fleisch & Fisch"],
+  ["Fischstäbchen",200,12,18,9,1,"Fleisch & Fisch"],
+  ["Thunfisch (Dose, Öl)",190,25,0,10,0,"Fleisch & Fisch"],
+  ["Räucherlachs",180,18,0,12,0,"Fleisch & Fisch"],
+  ["Hering",158,18,0,9,0,"Fleisch & Fisch"],
+  ["Makrele",205,19,0,14,0,"Fleisch & Fisch"],
+  ["Surimi",99,8,12,1,0,"Fleisch & Fisch"],
+  ["Veganes Hack",160,17,5,8,4,"Fleisch & Fisch"],
+  ["Tempeh",192,20,8,11,1,"Fleisch & Fisch"],
+  // --- Molkerei & Eier (Erweiterung) ---
+  ["Joghurt natur (3,5%)",61,3.5,4.7,3.5,0,"Molkerei & Eier"],
+  ["Joghurt natur (1,5%)",50,4,5,1.5,0,"Molkerei & Eier"],
+  ["Fruchtjoghurt",90,3,14,2.5,0,"Molkerei & Eier"],
+  ["Kefir",50,3.3,4,1.5,0,"Molkerei & Eier"],
+  ["Schmand",240,3,4,24,0,"Molkerei & Eier"],
+  ["Saure Sahne",115,3,4,10,0,"Molkerei & Eier"],
+  ["Sahne (30%)",290,2,3,30,0,"Molkerei & Eier"],
+  ["Crème fraîche",290,2,3,30,0,"Molkerei & Eier"],
+  ["Frischkäse",250,7,4,24,0,"Molkerei & Eier"],
+  ["Frischkäse (light)",145,9,5,10,0,"Molkerei & Eier"],
+  ["Emmentaler",380,28,0,30,0,"Molkerei & Eier"],
+  ["Parmesan",400,36,0,29,0,"Molkerei & Eier"],
+  ["Cheddar",400,25,1,33,0,"Molkerei & Eier"],
+  ["Camembert",300,20,0,24,0,"Molkerei & Eier"],
+  ["Butterkäse",360,22,0,30,0,"Molkerei & Eier"],
+  ["Schmelzkäse",280,12,4,23,0,"Molkerei & Eier"],
+  ["Mascarpone",430,4,4,44,0,"Molkerei & Eier"],
+  ["Ricotta",174,11,3,13,0,"Molkerei & Eier"],
+  ["Pudding (Vanille)",110,3,17,3,0,"Molkerei & Eier"],
+  ["Sojajoghurt",55,4,4,2,0.5,"Molkerei & Eier"],
+  ["Sojamilch",42,3.3,3,1.8,0.6,"Molkerei & Eier"],
+  ["Mandelmilch",24,0.5,3,1.1,0.4,"Molkerei & Eier"],
+  // --- Kohlenhydrate (Erweiterung) ---
+  ["Basmatireis (gekocht)",121,2.7,25,0.4,0.6,"Kohlenhydrate"],
+  ["Spätzle (gekocht)",165,6,28,3,2,"Kohlenhydrate"],
+  ["Gnocchi",160,4,33,1,2,"Kohlenhydrate"],
+  ["Tortellini (gefüllt)",280,12,38,9,2,"Kohlenhydrate"],
+  ["Bulgur (gekocht)",83,3,19,0.2,4.5,"Kohlenhydrate"],
+  ["Polenta (gekocht)",85,2,18,0.4,1,"Kohlenhydrate"],
+  ["Toastbrot",270,8,49,4,3,"Kohlenhydrate"],
+  ["Baguette",270,9,52,2.5,3,"Kohlenhydrate"],
+  ["Roggenbrot",200,6,40,1.5,6.5,"Kohlenhydrate"],
+  ["Dinkelbrot",240,8,42,2,7,"Kohlenhydrate"],
+  ["Pumpernickel",250,6,46,2,9,"Kohlenhydrate"],
+  ["Brezel",340,10,68,3,3,"Kohlenhydrate"],
+  ["Croissant",406,8,46,21,2.5,"Kohlenhydrate"],
+  ["Tortilla-Wrap",310,8,50,7,3,"Kohlenhydrate"],
+  ["Cornflakes",360,7,84,1,3,"Kohlenhydrate"],
+  ["Porridge (mit Wasser)",70,2.5,11,1.4,1.5,"Kohlenhydrate"],
+  ["Pancakes",220,6,28,9,1,"Kohlenhydrate"],
+  ["Kartoffelpüree",90,2,14,3,1.5,"Kohlenhydrate"],
+  ["Bratkartoffeln",150,3,20,7,2,"Kohlenhydrate"],
+  ["Kroketten",200,3,25,10,2,"Kohlenhydrate"],
+  ["Erbsen (gekocht)",84,5.4,14,0.4,5,"Kohlenhydrate"],
+  ["Weiße Bohnen",110,7,20,0.5,6,"Kohlenhydrate"],
+  // --- Gemüse (Erweiterung) ---
+  ["Rosenkohl",43,3.4,9,0.3,3.8,"Gemüse"],
+  ["Grünkohl",49,4.3,9,0.9,4,"Gemüse"],
+  ["Aubergine",25,1,6,0.2,3,"Gemüse"],
+  ["Rote Bete",43,1.6,10,0.2,2.8,"Gemüse"],
+  ["Sellerie",16,0.7,3,0.2,1.6,"Gemüse"],
+  ["Lauch",31,1.5,6,0.3,1.8,"Gemüse"],
+  ["Kürbis",26,1,6,0.1,1,"Gemüse"],
+  ["Spargel",20,2.2,4,0.1,2.1,"Gemüse"],
+  ["Rucola",25,2.6,2,0.7,1.6,"Gemüse"],
+  ["Eisbergsalat",14,0.9,3,0.1,1.2,"Gemüse"],
+  ["Feldsalat",21,2,3.6,0.4,1.5,"Gemüse"],
+  ["Radieschen",16,0.7,3.4,0.1,1.6,"Gemüse"],
+  ["Kohlrabi",27,1.7,6,0.1,3.6,"Gemüse"],
+  ["Sauerkraut",19,1,4,0.1,2.5,"Gemüse"],
+  ["Oliven",145,1,6,15,3,"Gemüse"],
+  ["Tomatenmark",80,4,16,0.5,3,"Gemüse"],
+  ["Passierte Tomaten",35,1.5,6,0.3,1.5,"Gemüse"],
+  // --- Obst (Erweiterung) ---
+  ["Birne",57,0.4,15,0.1,3.1,"Obst"],
+  ["Pfirsich",39,0.9,10,0.3,1.5,"Obst"],
+  ["Pflaume",46,0.7,11,0.3,1.4,"Obst"],
+  ["Kirschen",63,1,16,0.2,2.1,"Obst"],
+  ["Wassermelone",30,0.6,8,0.2,0.4,"Obst"],
+  ["Honigmelone",36,0.8,9,0.1,0.8,"Obst"],
+  ["Heidelbeeren",57,0.7,14,0.3,2.4,"Obst"],
+  ["Himbeeren",52,1.2,12,0.7,6.5,"Obst"],
+  ["Brombeeren",43,1.4,10,0.5,5.3,"Obst"],
+  ["Granatapfel",83,1.7,19,1.2,4,"Obst"],
+  ["Grapefruit",42,0.8,11,0.1,1.6,"Obst"],
+  ["Aprikose",48,1.4,11,0.4,2,"Obst"],
+  ["Feige (frisch)",74,0.8,19,0.3,2.9,"Obst"],
+  ["Trockenpflaumen",240,2.2,64,0.4,7,"Obst"],
+  ["Getrocknete Aprikosen",240,3.4,63,0.5,7,"Obst"],
+  // --- Fette & Nüsse (Erweiterung) ---
+  ["Haselnüsse",628,15,17,61,10,"Fette & Nüsse"],
+  ["Pistazien",562,20,28,45,10,"Fette & Nüsse"],
+  ["Paranüsse",660,14,12,66,8,"Fette & Nüsse"],
+  ["Pinienkerne",673,14,13,68,4,"Fette & Nüsse"],
+  ["Kürbiskerne",559,30,11,49,6,"Fette & Nüsse"],
+  ["Sonnenblumenkerne",584,21,20,51,9,"Fette & Nüsse"],
+  ["Mandelmus",614,21,19,56,10,"Fette & Nüsse"],
+  ["Tahini",595,17,21,54,9,"Fette & Nüsse"],
+  ["Rapsöl",884,0,0,100,0,"Fette & Nüsse"],
+  ["Margarine",720,0.2,0.7,80,0,"Fette & Nüsse"],
+  ["Vollmilchschokolade",535,7.3,59,30,3.4,"Fette & Nüsse"],
+  ["Nuss-Nougat-Creme",539,6,57,31,0,"Fette & Nüsse"],
+  ["Erdnüsse (geröstet)",600,26,16,49,8,"Fette & Nüsse"],
+  // --- Snacks & Sonstiges: Supplements & Getränke ---
+  ["Casein-Pulver",360,75,8,2,1,"Snacks & Sonstiges"],
+  ["Veganes Proteinpulver",370,75,8,5,3,"Snacks & Sonstiges"],
+  ["Maltodextrin",380,0,95,0,0,"Snacks & Sonstiges"],
+  ["Cola (/100ml)",42,0,11,0,0,"Snacks & Sonstiges"],
+  ["Cola Zero (/100ml)",0,0,0,0,0,"Snacks & Sonstiges"],
+  ["Apfelschorle (/100ml)",24,0,6,0,0,"Snacks & Sonstiges"],
+  ["Orangensaft (/100ml)",45,0.7,10,0.2,0.2,"Snacks & Sonstiges"],
+  ["Apfelsaft (/100ml)",46,0.1,11,0.1,0.1,"Snacks & Sonstiges"],
+  ["Energy Drink (/100ml)",45,0,11,0,0,"Snacks & Sonstiges"],
+  ["Bier (/100ml)",43,0.5,3.6,0,0,"Snacks & Sonstiges"],
+  ["Weißwein (/100ml)",82,0.1,2.6,0,0,"Snacks & Sonstiges"],
+  ["Rotwein (/100ml)",85,0.1,2.6,0,0,"Snacks & Sonstiges"],
+  ["Latte Macchiato (/100ml)",55,3,5,2.5,0,"Snacks & Sonstiges"],
+  // --- Snacks & Sonstiges: Süßes & Knabbern ---
+  ["Gummibärchen",343,7,77,0.1,0,"Snacks & Sonstiges"],
+  ["Chips",536,6,53,34,4,"Snacks & Sonstiges"],
+  ["Salzstangen",370,10,75,3,3,"Snacks & Sonstiges"],
+  ["Popcorn",480,9,57,25,10,"Snacks & Sonstiges"],
+  ["Schokoriegel",480,9,55,24,2,"Snacks & Sonstiges"],
+  ["Müsliriegel",400,6,65,12,4,"Snacks & Sonstiges"],
+  ["Butterkeks",460,7,72,15,2,"Snacks & Sonstiges"],
+  ["Donut",450,6,50,25,2,"Snacks & Sonstiges"],
+  ["Eis (Vanille)",200,3.5,24,11,0,"Snacks & Sonstiges"],
+  ["Käsekuchen",280,7,28,15,1,"Snacks & Sonstiges"],
+  ["Apfelkuchen",240,3,35,9,2,"Snacks & Sonstiges"],
+  ["Ahornsirup",260,0,67,0,0,"Snacks & Sonstiges"],
+  ["Zucker",400,0,100,0,0,"Snacks & Sonstiges"],
+  // --- Snacks & Sonstiges: Saucen ---
+  ["Mayonnaise",680,1,2,75,0,"Snacks & Sonstiges"],
+  ["Mayonnaise (light)",300,1,9,29,0,"Snacks & Sonstiges"],
+  ["Senf",100,5,8,5,3,"Snacks & Sonstiges"],
+  ["Sojasauce",60,8,5,0,1,"Snacks & Sonstiges"],
+  ["BBQ-Sauce",170,1,38,0.5,1,"Snacks & Sonstiges"],
+  ["Pesto",450,5,6,45,2,"Snacks & Sonstiges"],
+  ["Tomatensauce (Glas)",60,1.5,8,2.5,1.5,"Snacks & Sonstiges"],
+  ["Hummus",177,8,20,10,6,"Snacks & Sonstiges"],
+  // --- Snacks & Sonstiges: Fast Food & Fertiggerichte ---
+  ["Döner (Kebab)",215,15,15,11,2,"Snacks & Sonstiges"],
+  ["Currywurst mit Sauce",240,9,9,18,1,"Snacks & Sonstiges"],
+  ["Pommes (Imbiss)",290,3.4,38,14,4,"Snacks & Sonstiges"],
+  ["Pizza Margherita",240,9,30,9,2,"Snacks & Sonstiges"],
+  ["Pizza Salami",270,11,28,13,2,"Snacks & Sonstiges"],
+  ["Hamburger",250,13,28,10,2,"Snacks & Sonstiges"],
+  ["Cheeseburger",280,14,27,13,2,"Snacks & Sonstiges"],
+  ["Falafel",333,13,32,18,5,"Snacks & Sonstiges"],
+  ["Sushi (Maki)",140,4,28,1,1,"Snacks & Sonstiges"],
+  ["Lasagne",130,7,11,6,1,"Snacks & Sonstiges"],
+  ["Gulasch",130,13,4,7,1,"Snacks & Sonstiges"],
+  ["Maultaschen",180,9,20,7,2,"Snacks & Sonstiges"],
+  ["Käsespätzle",200,8,20,10,2,"Snacks & Sonstiges"],
+  // --- Eigenmarken Supermärkte (protein-fokussiert, Richtwerte je 100 g/ml) ---
+  // Lidl: Milbona (Molkerei), Dulano/Grillmeister (Fleisch), Crownfield (Cerealien)
+  ["Skyr Natur (Milbona, Lidl)",63,11,4,0.2,0,"Molkerei & Eier"],
+  ["Magerquark (Milbona, Lidl)",67,12,4,0.3,0,"Molkerei & Eier"],
+  ["High Protein Pudding (Milbona, Lidl)",80,8,9,1.5,0,"Molkerei & Eier"],
+  ["High Protein Drink (Milbona, Lidl) /100ml",60,6,7,1.2,0,"Molkerei & Eier"],
+  ["High Protein Joghurt (Milbona, Lidl)",75,10,6,1.5,0,"Molkerei & Eier"],
+  ["Körniger Frischkäse (Milbona, Lidl)",102,12,3.3,4.3,0,"Molkerei & Eier"],
+  ["Hähnchen-Aufschnitt (Dulano, Lidl)",105,18,1,3,0,"Fleisch & Fisch"],
+  ["Putenbrust-Aufschnitt (Dulano, Lidl)",105,18,1,3,0,"Fleisch & Fisch"],
+  ["Hähnchenbrustfilet (Grillmeister, Lidl)",110,23,0,2,0,"Fleisch & Fisch"],
+  ["Haferflocken (Crownfield, Lidl)",372,13,59,7,10,"Kohlenhydrate"],
+  // Rewe: ja! / Wilhelm Brandenburg / REWE Beste Wahl
+  ["Magerquark (ja!, Rewe)",67,12,4,0.3,0,"Molkerei & Eier"],
+  ["Skyr Natur (REWE Beste Wahl)",63,11,4,0.2,0,"Molkerei & Eier"],
+  ["High Protein Pudding (REWE)",80,8,9,1.5,0,"Molkerei & Eier"],
+  ["Hähnchenbrustfilet (Wilhelm Brandenburg, Rewe)",110,23,0,2,0,"Fleisch & Fisch"],
+  ["Haferflocken (ja!, Rewe)",372,13,59,7,10,"Kohlenhydrate"],
+  // Aldi: Milsani (Molkerei) / Meine Metzgerei (Fleisch)
+  ["Skyr Natur (Milsani, Aldi)",63,11,4,0.2,0,"Molkerei & Eier"],
+  ["Magerquark (Milsani, Aldi)",67,12,4,0.3,0,"Molkerei & Eier"],
+  ["High Protein Pudding (Milsani, Aldi)",80,8,9,1.5,0,"Molkerei & Eier"],
+  ["Hähnchenbrustfilet (Meine Metzgerei, Aldi)",110,23,0,2,0,"Fleisch & Fisch"],
+  // Edeka: GUT&GÜNSTIG
+  ["Magerquark (GUT&GÜNSTIG, Edeka)",67,12,4,0.3,0,"Molkerei & Eier"],
+  ["Skyr Natur (GUT&GÜNSTIG, Edeka)",63,11,4,0.2,0,"Molkerei & Eier"],
+  ["High Protein Pudding (Edeka)",80,8,9,1.5,0,"Molkerei & Eier"],
+  // Kaufland: K-Classic / K-Purland
+  ["Magerquark (K-Classic, Kaufland)",67,12,4,0.3,0,"Molkerei & Eier"],
+  ["Skyr Natur (K-Classic, Kaufland)",63,11,4,0.2,0,"Molkerei & Eier"],
+  ["High Protein Pudding (K-Classic, Kaufland)",80,8,9,1.5,0,"Molkerei & Eier"],
+  ["Hähnchenbrustfilet (K-Purland, Kaufland)",110,23,0,2,0,"Fleisch & Fisch"]
 ];
 // Gruppierte <optgroup>-Optionen, optional gefiltert nach Suchtext
 function foodOptionsHtml(filter){
@@ -450,6 +660,44 @@ const PORTION_G = {
   "Protein-Riegel":{ "Stück":60, Portion:60 }, "Proteinpudding (fertig)":{ Portion:200, "Stück":200 },
   "Tomaten":{ "Stück":85 }, "Paprika":{ "Stück":120 }, "Karotten":{ "Stück":60 }, "Zwiebeln":{ "Stück":80 }
 };
+Object.assign(PORTION_G, {
+  "Joghurt natur (3,5%)":{ Portion:150, EL:30 }, "Joghurt natur (1,5%)":{ Portion:150 },
+  "Fruchtjoghurt":{ Portion:150, "Stück":150 }, "Frischkäse":{ EL:30, Portion:30 },
+  "Frischkäse (light)":{ EL:30, Portion:30 }, "Parmesan":{ EL:8, Portion:20 },
+  "Sahne (30%)":{ EL:12, Tasse:240 }, "Schmand":{ EL:25 }, "Saure Sahne":{ EL:25 },
+  "Crème fraîche":{ EL:25 }, "Mascarpone":{ EL:25 }, "Sojamilch":{ Tasse:240, Portion:200 },
+  "Mandelmilch":{ Tasse:240, Portion:200 }, "Pudding (Vanille)":{ Portion:125, "Stück":125 },
+  "Salami":{ "Stück":10 }, "Kochschinken":{ "Stück":25 }, "Putenaufschnitt":{ "Stück":25 },
+  "Bratwurst":{ "Stück":120 }, "Wiener Würstchen":{ "Stück":50 }, "Frikadelle":{ "Stück":80 },
+  "Hähnchen-Nuggets":{ "Stück":18 }, "Fischstäbchen":{ "Stück":30 }, "Salami (Pizza)":{ "Stück":10 },
+  "Toastbrot":{ "Stück":25 }, "Baguette":{ Portion:75 }, "Roggenbrot":{ "Stück":45 },
+  "Dinkelbrot":{ "Stück":45 }, "Brezel":{ "Stück":80 }, "Croissant":{ "Stück":60 },
+  "Tortilla-Wrap":{ "Stück":62 }, "Cornflakes":{ Portion:40, Tasse:40 }, "Pancakes":{ "Stück":40 },
+  "Birne":{ "Stück":150 }, "Pfirsich":{ "Stück":150 }, "Pflaume":{ "Stück":50 },
+  "Aprikose":{ "Stück":40 }, "Trockenpflaumen":{ "Stück":8 }, "Getrocknete Aprikosen":{ "Stück":8 },
+  "Aubergine":{ "Stück":250 }, "Rote Bete":{ "Stück":80 }, "Mandelmus":{ EL:16, TL:6 },
+  "Tahini":{ EL:16, TL:6 }, "Rapsöl":{ EL:13, TL:5 }, "Margarine":{ EL:14, TL:5 },
+  "Nuss-Nougat-Creme":{ EL:20, TL:7 }, "Vollmilchschokolade":{ "Stück":5, Portion:30 },
+  "Mayonnaise":{ EL:15, TL:5 }, "Mayonnaise (light)":{ EL:15, TL:5 }, "Senf":{ EL:15, TL:5 },
+  "Sojasauce":{ EL:15, TL:5 }, "BBQ-Sauce":{ EL:17, TL:6 }, "Pesto":{ EL:15, TL:5 },
+  "Tomatenmark":{ EL:15, TL:5 }, "Hummus":{ EL:25, Portion:50 }, "Ahornsirup":{ EL:20, TL:7 },
+  "Zucker":{ EL:12, TL:4 }, "Gummibärchen":{ Portion:30 }, "Chips":{ Portion:30 },
+  "Schokoriegel":{ "Stück":50, Portion:50 }, "Müsliriegel":{ "Stück":30 }, "Butterkeks":{ "Stück":6 },
+  "Donut":{ "Stück":60 }, "Eis (Vanille)":{ Portion:100, "Stück":100 }, "Casein-Pulver":{ Portion:30, EL:15 },
+  "Veganes Proteinpulver":{ Portion:30, EL:15 }, "Pizza Margherita":{ Portion:300, "Stück":300 },
+  "Pizza Salami":{ Portion:300, "Stück":300 }, "Hamburger":{ "Stück":110 }, "Cheeseburger":{ "Stück":120 },
+  "Döner (Kebab)":{ Portion:400, "Stück":400 }, "Falafel":{ "Stück":20 }, "Sushi (Maki)":{ "Stück":20 }
+});
+// Eigenmarken-Portionen (Becher/Drink/Aufschnitt)
+["High Protein Pudding (Milbona, Lidl)","High Protein Pudding (REWE)","High Protein Pudding (Milsani, Aldi)","High Protein Pudding (Edeka)","High Protein Pudding (K-Classic, Kaufland)"]
+  .forEach(n => PORTION_G[n] = { "Stück":200, Portion:200 });
+["High Protein Joghurt (Milbona, Lidl)"].forEach(n => PORTION_G[n] = { "Stück":200, Portion:200 });
+["High Protein Drink (Milbona, Lidl) /100ml"].forEach(n => PORTION_G[n] = { Tasse:250, Portion:250, "Stück":330 });
+["Hähnchen-Aufschnitt (Dulano, Lidl)","Putenbrust-Aufschnitt (Dulano, Lidl)"].forEach(n => PORTION_G[n] = { "Stück":25, Portion:50 });
+["Skyr Natur (Milbona, Lidl)","Skyr Natur (REWE Beste Wahl)","Skyr Natur (Milsani, Aldi)","Skyr Natur (GUT&GÜNSTIG, Edeka)","Skyr Natur (K-Classic, Kaufland)"]
+  .forEach(n => PORTION_G[n] = { Portion:170 });
+["Magerquark (Milbona, Lidl)","Magerquark (ja!, Rewe)","Magerquark (Milsani, Aldi)","Magerquark (GUT&GÜNSTIG, Edeka)","Magerquark (K-Classic, Kaufland)"]
+  .forEach(n => PORTION_G[n] = { Portion:250, EL:30 });
 function unitGrams(foodName, unit){
   const ov = PORTION_G[foodName];
   if (ov && ov[unit] != null) return ov[unit];
@@ -606,6 +854,8 @@ let weights = loadKey("weightLogs", []);    // [{date, kg}]
 let shopStores = loadKey("shopStores", ["lidl"]);   // ausgewaehlte Supermaerkte (Mehrfachauswahl)
 let meals = loadKey("meals", []);   // feste Gerichte: [{id,n,kcal,p,c,f,fib,items:[{n,g,kcal,p,c,f,fib}]}]
 let foodUnitMem = loadKey("foodUnitMem", {});   // zuletzt verwendete Einheit je Lebensmittel-Name
+let foodRecents = loadKey("foodRecents", []);   // zuletzt geloggt: [{n, unit, amount, per100:[5], src}]
+let foodFavs = loadKey("foodFavs", []);         // gepinnt: gleiche Struktur wie recents
 // API-Key + Modell: GERAETE-lokal, NICHT in Sync/Export (Key bleibt nur in diesem Browser)
 function getApiKey(){ return store.get("coach_anthropic_key") || ""; }
 function setApiKey(v){ store.set("coach_anthropic_key", v||""); }
@@ -626,6 +876,8 @@ function saveAll(opts){
   store.set(dk("shopStores"), JSON.stringify(shopStores));
   store.set(dk("meals"), JSON.stringify(meals));
   store.set(dk("foodUnitMem"), JSON.stringify(foodUnitMem));
+  store.set(dk("foodRecents"), JSON.stringify(foodRecents));
+  store.set(dk("foodFavs"), JSON.stringify(foodFavs));
   if (!opts.silent && !opts.fromRemote){ syncUpdatedAt = Date.now(); pushRemote(); }
   store.set(dk("updatedAt"), JSON.stringify(syncUpdatedAt));
 }
@@ -635,7 +887,7 @@ store.set("coach_migrated", "1");
 // ----- Cloud-Sync (optional, Firebase Firestore) -----
 let db = null, docRef = null, applyingRemote = false, saveTimer = null;
 function setBadge(txt, col){ const b = document.getElementById("syncBadge"); if (b){ b.textContent = txt; b.style.color = col || "var(--muted)"; } }
-function snapshotData(){ return { logs, plan, sick, profile, foods, weights, shopStores, meals, foodUnitMem, updatedAt: syncUpdatedAt }; }
+function snapshotData(){ return { logs, plan, sick, profile, foods, weights, shopStores, meals, foodUnitMem, foodRecents, foodFavs, updatedAt: syncUpdatedAt }; }
 function pushRemote(){
   if (!docRef) return;
   clearTimeout(saveTimer);
@@ -655,6 +907,8 @@ function adoptRemote(d){
   if (Array.isArray(d.shopStores)) shopStores = d.shopStores;
   if (Array.isArray(d.meals)) meals = d.meals;
   if (d.foodUnitMem && typeof d.foodUnitMem === "object") foodUnitMem = d.foodUnitMem;
+  if (Array.isArray(d.foodRecents)) foodRecents = d.foodRecents;
+  if (Array.isArray(d.foodFavs)) foodFavs = d.foodFavs;
   syncUpdatedAt = d.updatedAt || Date.now();
   saveAll({ fromRemote:true });
   applyingRemote = false;
@@ -1332,9 +1586,14 @@ function renderFoodToday(){
       </div>
       <p style="font-size:12px;color:var(--muted);margin:6px 0 0">Neue Gerichte (z.B. Shake) legst du im Tab <b>Gerichte</b> an.</p>
     </div>` : ""}
+    <div id="quickAccess" class="card" style="display:none"></div>
     <div class="card">
       <div class="ex-name" style="margin-bottom:8px">Lebensmittel hinzufügen</div>
-      <input type="text" id="foodSearch" placeholder="Lebensmittel suchen (z.B. Hähnchen, Reis, Skyr)…" style="width:100%" autocomplete="off">
+      <div class="row" style="margin-bottom:0">
+        <input type="text" id="foodSearch" placeholder="Suchen (z.B. Hähnchen, Reis, Skyr)…" style="flex:1;min-width:160px" autocomplete="off">
+        <button class="btn small" id="scanBtn">Barcode scannen</button>
+      </div>
+      <div id="scanBox" style="display:none;margin-top:10px"></div>
       <div id="foodResults" class="food-results" style="display:none"></div>
       <div id="qtyPanel"></div>
       <div style="margin-top:10px">
@@ -1363,8 +1622,11 @@ function renderFoodToday(){
         </div>`).join("") : '<div class="empty">Noch nichts geloggt.</div>'}
     </div>`;
   document.getElementById("foodDate").onchange = e => { foodDate = e.target.value; renderFoodToday(); };
-  _selFoodIdx = null;
+  _selFood = null;
+  stopScan();
+  renderQuickAccess();
   document.getElementById("foodSearch").oninput = e => renderFoodResults(e.target.value);
+  document.getElementById("scanBtn").onclick = startScan;
   document.getElementById("customToggle").onclick = () => {
     const c = document.getElementById("customFood");
     c.style.display = c.style.display==="none" ? "" : "none";
@@ -1378,12 +1640,23 @@ function logMeal(id){
   foods.push({ date:foodDate, n:m.n, g:null, kcal:m.kcal, p:m.p, c:m.c, f:m.f, fib:m.fib, meal:true });
   saveAll(); renderFoodToday(); toast(m.n + " geloggt");
 }
-// --- Live-Suche + Mengen-Panel ---
-let _selFoodIdx = null;
+// --- Live-Suche + Mengen-Panel + Schnellzugriff + Barcode ---
+let _selFood = null;   // { n, per100:[kcal,p,c,f,fib], src:'db'|'barcode' }
+function foldDe(s){ return (s||"").toLowerCase().replace(/ä/g,"a").replace(/ö/g,"o").replace(/ü/g,"u").replace(/ß/g,"ss"); }
+function isLiquidName(n){ return /\/100ml|drink|milch|shake|buttermilch|saft|cola|bier|wein|schorle|kaffee|macchiato|eistee|limonade|energy/i.test(n); }
 function foodMatches(filter){
-  const f = (filter||"").trim().toLowerCase();
+  const f = foldDe((filter||"").trim());
   if (!f) return [];
-  return FOOD_DB.map((x,i)=>({x,i})).filter(o=>o.x[0].toLowerCase().includes(f)).slice(0,12);
+  const scored = [];
+  FOOD_DB.forEach((x,i)=>{
+    const name = foldDe(x[0]);
+    const pos = name.indexOf(f);
+    if (pos < 0) return;
+    let score = pos===0 ? (name.length===f.length ? 0 : 1) : (name[pos-1]===" "||name[pos-1]==="(" ? 2 : 3);
+    scored.push({ x, i, score, len:name.length });
+  });
+  scored.sort((a,b)=> a.score-b.score || a.len-b.len);
+  return scored.slice(0, 12);
 }
 function renderFoodResults(filter){
   const box = document.getElementById("foodResults");
@@ -1391,37 +1664,51 @@ function renderFoodResults(filter){
   if (!filter || !filter.trim()){ box.style.display="none"; box.innerHTML=""; return; }
   const list = foodMatches(filter);
   if (!list.length){
-    box.style.display=""; box.innerHTML='<div class="food-result" style="cursor:default;color:var(--muted)">Nichts gefunden — nutze unten „Eigenes Lebensmittel manuell eingeben".</div>';
+    box.style.display=""; box.innerHTML='<div class="food-result" style="cursor:default;color:var(--muted)">Nichts gefunden — Barcode scannen oder unten manuell eintragen.</div>';
     return;
   }
   box.style.display="";
   box.innerHTML = list.map(o=>`<div class="food-result" onclick="selectFood(${o.i})">
-    <div><b>${o.x[0]}</b><div class="fr-macro">${o.x[1]} kcal · ${o.x[2]} g P / 100 ${/\/100ml|\(\/100ml\)/.test(o.x[0])||/drink|milch|shake/i.test(o.x[0])?"ml":"g"}</div></div>
+    <div><b>${o.x[0]}</b><div class="fr-macro">${o.x[1]} kcal · ${o.x[2]} g P / 100 ${isLiquidName(o.x[0])?"ml":"g"}</div></div>
     <span class="badge">wählen</span></div>`).join("");
 }
 window.selectFood = function(i){
-  _selFoodIdx = i;
+  const f = FOOD_DB[i];
+  _selFood = { n:f[0], per100:[f[1],f[2],f[3],f[4],f[5]], src:"db" };
   document.getElementById("foodResults").style.display = "none";
-  document.getElementById("foodSearch").value = FOOD_DB[i][0];
+  document.getElementById("foodSearch").value = f[0];
   renderQtyPanel();
 };
 function defaultAmount(unit){ return (unit==="g"||unit==="ml") ? 100 : 1; }
 function renderQtyPanel(){
   const wrap = document.getElementById("qtyPanel");
   if (!wrap) return;
-  if (_selFoodIdx==null){ wrap.innerHTML=""; return; }
-  const f = FOOD_DB[_selFoodIdx], name = f[0];
-  const isLiquid = /drink|milch|shake|buttermilch/i.test(name);
+  if (!_selFood){ wrap.innerHTML=""; return; }
+  const name = _selFood.n, per = _selFood.per100;
+  const isLiquid = isLiquidName(name);
   const memUnit = foodUnitMem[name];
   const unit = (memUnit && UNIT_LIST.includes(memUnit)) ? memUnit : (isLiquid ? "ml" : "g");
+  // Portions-Schnelltasten
+  const ov = PORTION_G[name] || {};
+  const chips = [];
+  if (isLiquid) chips.push([250,"ml"]);
+  chips.push([100,"g"]);
+  ["Stück","Portion","Tasse","EL","TL"].forEach(u=>{ if (ov[u]!=null) chips.push([1,u]); });
+  const chipHtml = chips.map(c=>`<button class="pchip" onclick="setQty(${c[0]},'${c[1]}')">${c[0]} ${c[1]}</button>`).join("");
+  const isFav = foodFavs.some(x=>x.n===name);
   wrap.innerHTML = `<div class="qty-panel">
-    <div style="font-weight:600;margin-bottom:8px">${name}</div>
+    <div class="row" style="justify-content:space-between;margin-bottom:6px">
+      <div style="font-weight:600">${name}${_selFood.src==="barcode"?' <span class="badge">Barcode</span>':''}</div>
+      <button class="btn small" id="favToggle">${isFav?"gemerkt":"merken"}</button>
+    </div>
+    <div class="pchips" style="margin-bottom:8px">${chipHtml}</div>
     <div class="row" style="margin-bottom:6px">
       <input type="number" id="qtyAmount" value="${defaultAmount(unit)}" min="0" step="any" style="width:90px">
       <select id="qtyUnit">${UNIT_LIST.map(u=>`<option${u===unit?" selected":""}>${u}</option>`).join("")}</select>
       <button class="btn" id="qtyAdd">+ Hinzufügen</button>
     </div>
     <div id="qtyMacros" class="fr-macro"></div>
+    ${_selFood.src==="barcode"?'<p style="font-size:11px;color:var(--muted);margin:6px 0 0">Werte aus Open Food Facts (von Nutzern gepflegt) — bei Bedarf gegenprüfen.</p>':''}
   </div>`;
   const recompute = () => {
     const a = +document.getElementById("qtyAmount").value || 0;
@@ -1429,32 +1716,155 @@ function renderQtyPanel(){
     const grams = a * unitGrams(name, u), k = grams/100;
     const r1 = x => Math.round(x*10)/10;
     document.getElementById("qtyMacros").innerHTML =
-      `= <b>${Math.round(f[1]*k)} kcal</b> · ${r1(f[2]*k)} g P · ${r1(f[3]*k)} g KH · ${r1(f[4]*k)} g F · ${r1(f[5]*k)} g B`
+      `= <b>${Math.round(per[0]*k)} kcal</b> · ${r1(per[1]*k)} g P · ${r1(per[2]*k)} g KH · ${r1(per[3]*k)} g F · ${r1(per[4]*k)} g B`
       + (u!=="g" && u!=="ml" ? ` <span style="color:var(--muted)">(≈ ${Math.round(grams)} g)</span>` : "");
   };
   document.getElementById("qtyAmount").oninput = recompute;
   document.getElementById("qtyUnit").onchange = recompute;
   document.getElementById("qtyAdd").onclick = addSelectedFood;
+  document.getElementById("favToggle").onclick = () => {
+    const idx = foodFavs.findIndex(x=>x.n===name);
+    if (idx>=0) foodFavs.splice(idx,1);
+    else foodFavs.unshift({ n:name, per100:per.slice(), amount:+document.getElementById("qtyAmount").value||100, unit:document.getElementById("qtyUnit").value, src:_selFood.src });
+    saveAll(); renderQtyPanel(); renderQuickAccess();
+  };
   recompute();
 }
+window.setQty = function(amount, unit){
+  const a = document.getElementById("qtyAmount"), u = document.getElementById("qtyUnit");
+  if (!a || !u) return;
+  a.value = amount; u.value = unit;
+  a.oninput();
+};
+function pushRecent(e){
+  foodRecents = foodRecents.filter(r=>r.n!==e.n);
+  foodRecents.unshift(e);
+  if (foodRecents.length > 18) foodRecents.length = 18;
+}
+function logFood(name, per100, amount, unit, src){
+  const grams = amount * unitGrams(name, unit), k = grams/100;
+  foods.push({ date:foodDate, n: name + (unit!=="g" && unit!=="ml" ? ` (${amount} ${unit})` : ""),
+    g: Math.round(grams*10)/10, kcal:per100[0]*k, p:per100[1]*k, c:per100[2]*k, f:per100[3]*k, fib:per100[4]*k });
+  foodUnitMem[name] = unit;
+  pushRecent({ n:name, per100:per100.slice(), amount, unit, src:src||"db" });
+  saveAll();
+}
 function addSelectedFood(){
-  if (_selFoodIdx==null) return;
-  const f = FOOD_DB[_selFoodIdx], name = f[0];
+  if (!_selFood) return;
   const a = +document.getElementById("qtyAmount").value;
   const u = document.getElementById("qtyUnit").value;
   if (!a || a<=0){ alert("Bitte eine Menge eingeben."); return; }
-  const grams = a * unitGrams(name, u), k = grams/100;
-  foods.push({ date:foodDate, n: name + (u!=="g" && u!=="ml" ? ` (${a} ${u})` : ""),
-    g: Math.round(grams*10)/10, kcal:f[1]*k, p:f[2]*k, c:f[3]*k, f:f[4]*k, fib:f[5]*k });
-  foodUnitMem[name] = u;               // letzte Einheit merken
-  saveAll(); renderFoodToday(); toast("Eingetragen");
+  logFood(_selFood.n, _selFood.per100, a, u, _selFood.src);
+  renderFoodToday(); toast("Eingetragen");
 }
 function addCustomFood(){
   const g = id => +document.getElementById(id).value || 0;
   const n = document.getElementById("cfN").value.trim() || "Eigenes Lebensmittel";
   const entry = { date:foodDate, n, g:null, kcal:g("cfKcal"), p:g("cfP"), c:g("cfC"), f:g("cfF"), fib:g("cfFib") };
   if (!entry.kcal && !entry.p){ alert("Bitte mindestens kcal oder Protein angeben."); return; }
-  foods.push(entry); saveAll(); renderFoodToday(); toast("Eingetragen");
+  foods.push(entry);
+  pushRecent({ n, per100:[entry.kcal,entry.p,entry.c,entry.f,entry.fib], amount:100, unit:"Portion", src:"custom", custom:true });
+  saveAll(); renderFoodToday(); toast("Eingetragen");
+}
+// --- Schnellzugriff (Favoriten + Zuletzt) ---
+function quickChip(e, i, fav){
+  const showAmt = e.unit && !(e.unit==="g" && (+e.amount)===100);
+  const amt = showAmt ? ` · ${e.amount} ${e.unit}` : "";
+  const sec = fav
+    ? `<button class="qchip-x" onclick="unfav(${i})" title="Aus Favoriten entfernen">entf.</button>`
+    : `<button class="qchip-x" onclick="favFromRecent(${i})" title="Als Favorit merken">merken</button>`;
+  return `<span class="qchip"><button class="qchip-log" onclick="logQuick(${fav?1:0},${i})">${e.n}<span class="qchip-amt">${amt}</span></button>${sec}</span>`;
+}
+function renderQuickAccess(){
+  const box = document.getElementById("quickAccess");
+  if (!box) return;
+  let html = "";
+  if (foodFavs.length)
+    html += `<div class="qa-label">Favoriten</div><div class="qchips">${foodFavs.map((e,i)=>quickChip(e,i,true)).join("")}</div>`;
+  if (foodRecents.length)
+    html += `<div class="qa-label" style="margin-top:${foodFavs.length?"10px":"0"}">Zuletzt geloggt</div><div class="qchips">${foodRecents.slice(0,12).map((e,i)=>quickChip(e,i,false)).join("")}</div>`;
+  if (html){ box.style.display=""; box.innerHTML = `<div class="ex-name" style="margin-bottom:8px">Schnell loggen</div>${html}`; }
+  else { box.style.display="none"; box.innerHTML=""; }
+}
+window.logQuick = function(isFav, i){
+  const e = isFav ? foodFavs[i] : foodRecents[i];
+  if (!e) return;
+  logFood(e.n, e.per100, +e.amount||100, e.unit||"g", e.src);
+  renderFoodToday(); toast(e.n + " geloggt");
+};
+window.favFromRecent = function(i){
+  const e = foodRecents[i]; if (!e) return;
+  if (!foodFavs.some(x=>x.n===e.n)) foodFavs.unshift(Object.assign({}, e));
+  saveAll(); renderQuickAccess();
+};
+window.unfav = function(i){ foodFavs.splice(i,1); saveAll(); renderQuickAccess(); };
+// --- Barcode-Scanner (Kamera -> Open Food Facts) ---
+let _scanStream=null, _scanDetector=null, _scanRAF=null, _html5q=null;
+window.startScan = async function(){
+  const box = document.getElementById("scanBox");
+  box.style.display = "";
+  box.innerHTML = `<video id="scanVideo" playsinline muted style="width:100%;max-height:50vh;border-radius:10px;background:#000"></video>
+    <div class="row" style="margin-top:8px"><button class="btn small" onclick="stopScan()">Abbrechen</button>
+    <span id="scanMsg" style="font-size:12px;color:var(--muted)">Barcode ruhig vor die Kamera halten…</span></div>`;
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
+      throw new Error("Kamera nur über https / Safari oder Chrome");
+    if ("BarcodeDetector" in window){
+      _scanDetector = new window.BarcodeDetector({ formats:["ean_13","ean_8","upc_a","upc_e","code_128"] });
+      _scanStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" } });
+      const v = document.getElementById("scanVideo"); v.srcObject = _scanStream; await v.play();
+      const tick = async () => {
+        if (!_scanStream) return;
+        try { const codes = await _scanDetector.detect(v); if (codes && codes.length){ onBarcode(codes[0].rawValue); return; } } catch(e){}
+        _scanRAF = requestAnimationFrame(tick);
+      };
+      tick();
+    } else {
+      loadHtml5Qrcode(() => {
+        box.innerHTML = `<div id="qrReader" style="width:100%"></div><div class="row" style="margin-top:8px"><button class="btn small" onclick="stopScan()">Abbrechen</button></div>`;
+        _html5q = new window.Html5Qrcode("qrReader");
+        _html5q.start({ facingMode:"environment" }, { fps:10, qrbox:250 }, txt => onBarcode(txt), () => {})
+          .catch(e => { box.innerHTML = `<p style="color:var(--sick-fg);font-size:13px">Kamera nicht verfügbar: ${e}</p><button class="btn small" onclick="stopScan()">Schließen</button>`; });
+      });
+    }
+  } catch(e){
+    const m = document.getElementById("scanMsg");
+    if (m) m.innerHTML = `<span style="color:var(--sick-fg)">${e.message}</span>`;
+  }
+};
+function loadHtml5Qrcode(cb){
+  if (window.Html5Qrcode){ cb(); return; }
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js";
+  s.onload = cb; s.onerror = () => alert("Scanner-Bibliothek konnte nicht geladen werden (offline?).");
+  document.head.appendChild(s);
+}
+window.stopScan = function(){
+  if (_scanRAF){ cancelAnimationFrame(_scanRAF); _scanRAF=null; }
+  if (_scanStream){ _scanStream.getTracks().forEach(t=>t.stop()); _scanStream=null; }
+  if (_html5q){ try { _html5q.stop().then(()=>_html5q.clear()).catch(()=>{}); } catch(e){} _html5q=null; }
+  const box = document.getElementById("scanBox"); if (box){ box.style.display="none"; box.innerHTML=""; }
+};
+async function onBarcode(code){
+  stopScan();
+  toast("Barcode " + code + " — suche…");
+  try {
+    const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,product_name_de,brands,nutriments`);
+    const j = await r.json();
+    if (j.status !== 1 || !j.product){ alert("Produkt nicht in Open Food Facts gefunden.\nTrag es einfach manuell ein."); return; }
+    const p = j.product, nu = p.nutriments || {};
+    const num = v => { const n = +v; return isFinite(n) ? Math.round(n*10)/10 : 0; };
+    const per100 = [ num(nu["energy-kcal_100g"] != null ? nu["energy-kcal_100g"] : nu["energy-kcal"]),
+      num(nu["proteins_100g"]), num(nu["carbohydrates_100g"]), num(nu["fat_100g"]), num(nu["fiber_100g"]) ];
+    if (!per100[0] && !per100[1]){ alert("Für dieses Produkt fehlen Nährwerte in Open Food Facts.\nBitte manuell eintragen."); return; }
+    const name = (p.product_name_de || p.product_name || "Produkt") + (p.brands ? ` (${String(p.brands).split(",")[0].trim()})` : "");
+    _selFood = { n:name, per100, src:"barcode" };
+    const s = document.getElementById("foodSearch"); if (s) s.value = name;
+    renderQtyPanel();
+    toast("Gefunden: " + name);
+  } catch(e){
+    alert("Abruf fehlgeschlagen (Internet?).\nBitte manuell eintragen.");
+  }
 }
 window.delFood = function(i){ foods.splice(i,1); saveAll(); renderFoodToday(); };
 
@@ -1878,7 +2288,7 @@ document.getElementById("dataBtn").onclick = () => {
   document.getElementById("dataDlg").showModal();
 };
 document.getElementById("expBtn").onclick = () => {
-  document.getElementById("dataTxt").value = JSON.stringify({coach:2, exportedAt:new Date().toISOString(), logs, sick, plan, profile, foods, weights, shopStores, meals, foodUnitMem});
+  document.getElementById("dataTxt").value = JSON.stringify({coach:2, exportedAt:new Date().toISOString(), logs, sick, plan, profile, foods, weights, shopStores, meals, foodUnitMem, foodRecents, foodFavs});
 };
 document.getElementById("copyBtn").onclick = async () => {
   const ta = document.getElementById("dataTxt");
@@ -1920,6 +2330,8 @@ document.getElementById("impBtn").onclick = () => {
   }
   if (Array.isArray(d.shopStores)) shopStores = d.shopStores;
   if (d.foodUnitMem && typeof d.foodUnitMem === "object") foodUnitMem = Object.assign({}, foodUnitMem, d.foodUnitMem);
+  if (Array.isArray(d.foodRecents)) foodRecents = d.foodRecents;
+  if (Array.isArray(d.foodFavs)) foodFavs = d.foodFavs;
   if (Array.isArray(d.meals)){
     const mHave = new Set(meals.map(m=>m.id));
     d.meals.forEach(m => { if (!mHave.has(m.id)) meals.push(m); });
