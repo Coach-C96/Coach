@@ -1799,26 +1799,30 @@ window.favFromRecent = function(i){
 };
 window.unfav = function(i){ foodFavs.splice(i,1); saveAll(); renderQuickAccess(); };
 // --- Barcode-Scanner (Kamera -> Open Food Facts) ---
-let _html5q=null, _torchOn=false, _lastHitAt=0;
-function scanFormats(){
-  const F = window.Html5QrcodeSupportedFormats || {};
-  return [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128].filter(x => x != null);
+let _scanStream=null, _scanLoop=null, _scanCanvas=null, _torchTrack=null, _torchOn=false, _lastHitAt=0;
+function loadZbar(cb){
+  if (window.zbarWasm){ cb(); return; }
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.11.0/dist/index.js";
+  s.onload = () => cb();
+  s.onerror = () => { const m = document.getElementById("scanMsg"); if (m) m.innerHTML = '<span style="color:var(--sick-fg)">Scanner-Bibliothek konnte nicht geladen werden (offline?). Du kannst die Nummer trotzdem eintippen.</span>'; };
+  document.head.appendChild(s);
 }
 window.startScan = function(){
   const box = document.getElementById("scanBox");
   box.style.display = "";
   box.innerHTML = `
-    <div id="qrReader" style="width:100%;border-radius:10px;overflow:hidden"></div>
+    <video id="scanVideo" playsinline muted style="width:100%;max-height:55vh;border-radius:10px;background:#000;object-fit:cover"></video>
     <div class="row" style="margin-top:8px;gap:8px">
       <button class="btn small" id="scanTorch" style="display:none">Licht an</button>
-      <label class="btn small" style="cursor:pointer;margin:0">Barcode-Foto<input type="file" accept="image/*" capture="environment" id="scanFile" style="display:none"></label>
+      <label class="btn small" style="cursor:pointer;margin:0">Barcode-Foto<input type="file" accept="image/*" id="scanFile" style="display:none"></label>
       <button class="btn small" id="scanCancel">Abbrechen</button>
     </div>
     <div class="row" style="margin-top:6px">
       <input type="text" id="scanManual" inputmode="numeric" placeholder="oder EAN-Nummer eintippen" style="flex:1;min-width:150px">
       <button class="btn small" id="scanManualGo">Suchen</button>
     </div>
-    <p id="scanMsg" style="font-size:12px;color:var(--muted);margin:6px 0 0">Barcode mittig ins breite Fenster, ~10–15 cm Abstand, kurz ruhig halten. Klappt's nicht: Foto machen oder Nummer eintippen.</p>`;
+    <p id="scanMsg" style="font-size:12px;color:var(--muted);margin:6px 0 0">Strichcode formatfüllend ins Bild, ~10 cm Abstand, kurz ruhig halten. Klappt's nicht: „Barcode-Foto" wählen oder Nummer eintippen.</p>`;
   document.getElementById("scanCancel").onclick = stopScan;
   document.getElementById("scanManualGo").onclick = () => {
     const v = (document.getElementById("scanManual").value || "").replace(/\D/g, "");
@@ -1826,63 +1830,87 @@ window.startScan = function(){
     else alert("Bitte eine gültige Barcode-Nummer (mind. 8 Ziffern) eingeben.");
   };
   document.getElementById("scanFile").onchange = e => { const f = e.target.files && e.target.files[0]; if (f) scanFromFile(f); };
-  loadHtml5Qrcode(() => {
-    try {
-      _html5q = new window.Html5Qrcode("qrReader", { formatsToSupport: scanFormats(), experimentalFeatures:{ useBarCodeDetectorIfSupported:true }, verbose:false });
-      const config = {
-        fps: 12,
-        qrbox: vw => { const w = Math.min(Math.floor((vw || 320) * 0.92), 360); return { width:w, height: Math.max(110, Math.floor(w * 0.45)) }; },
-        aspectRatio: 1.3333,
-        videoConstraints: { facingMode:"environment", width:{ ideal:1920 }, height:{ ideal:1080 }, advanced:[{ focusMode:"continuous" }] }
-      };
-      _html5q.start({ facingMode:"environment" }, config, txt => onScanHit(txt), () => {})
-        .then(() => setupTorch())
-        .catch(e => { const m = document.getElementById("scanMsg"); if (m) m.innerHTML = `<span style="color:var(--sick-fg)">Kamera nicht verfügbar (${e}). Nutze Barcode-Foto oder tippe die Nummer ein.</span>`; });
-    } catch(e){ const m = document.getElementById("scanMsg"); if (m) m.textContent = "Scanner-Fehler: " + e.message; }
-  });
+  loadZbar(() => startCamera());
 };
-function onScanHit(txt){
-  const now = Date.now();
-  if (now - _lastHitAt < 1500) return;   // doppelte Callbacks abfangen
-  _lastHitAt = now;
-  try { if (navigator.vibrate) navigator.vibrate(120); } catch(e){}
-  stopScan(); onBarcode(txt);
-}
-function setupTorch(){
+async function startCamera(){
+  const msg = document.getElementById("scanMsg");
   try {
-    const caps = _html5q.getRunningTrackCapabilities ? _html5q.getRunningTrackCapabilities() : null;
-    if (caps && caps.torch){
-      const b = document.getElementById("scanTorch"); if (!b) return;
-      b.style.display = "";
-      b.onclick = () => {
-        _torchOn = !_torchOn;
-        _html5q.applyVideoConstraints({ advanced:[{ torch:_torchOn }] })
-          .then(() => { b.textContent = _torchOn ? "Licht aus" : "Licht an"; }).catch(() => {});
-      };
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("Kamera nur über https / Safari oder Chrome");
+    _scanStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:"environment" }, width:{ ideal:1920 }, height:{ ideal:1080 } } });
+    const v = document.getElementById("scanVideo");
+    if (!v){ stopScan(); return; }
+    v.srcObject = _scanStream; await v.play();
+    const track = _scanStream.getVideoTracks()[0];
+    try { await track.applyConstraints({ advanced:[{ focusMode:"continuous" }] }); } catch(e){}
+    try {
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      if (caps && caps.torch){ _torchTrack = track; const b = document.getElementById("scanTorch"); if (b){ b.style.display=""; b.onclick = toggleTorch; } }
+    } catch(e){}
+    _scanCanvas = document.createElement("canvas");
+    scanTick(v);
+  } catch(e){
+    if (msg) msg.innerHTML = `<span style="color:var(--sick-fg)">Kamera nicht verfügbar (${e.message}). Nutze „Barcode-Foto" oder tippe die Nummer ein.</span>`;
+  }
+}
+async function scanTick(v){
+  if (!_scanStream) return;
+  try {
+    const w = v.videoWidth, h = v.videoHeight;
+    if (w && h && window.zbarWasm){
+      const scale = Math.min(1, 1280/Math.max(w,h));
+      const cw = Math.round(w*scale), ch = Math.round(h*scale);
+      _scanCanvas.width = cw; _scanCanvas.height = ch;
+      const ctx = _scanCanvas.getContext("2d", { willReadFrequently:true });
+      ctx.drawImage(v, 0, 0, cw, ch);
+      const symbols = await window.zbarWasm.scanImageData(ctx.getImageData(0, 0, cw, ch));
+      if (symbols && symbols.length){ const code = symbols[0].decode(); if (code){ onScanHit(code); return; } }
     }
   } catch(e){}
+  _scanLoop = setTimeout(() => scanTick(v), 200);
+}
+function onScanHit(code){
+  const now = Date.now();
+  if (now - _lastHitAt < 1200) return;
+  _lastHitAt = now;
+  try { if (navigator.vibrate) navigator.vibrate(120); } catch(e){}
+  stopScan(); onBarcode(code);
+}
+function toggleTorch(){
+  if (!_torchTrack) return;
+  _torchOn = !_torchOn;
+  _torchTrack.applyConstraints({ advanced:[{ torch:_torchOn }] })
+    .then(() => { const b = document.getElementById("scanTorch"); if (b) b.textContent = _torchOn ? "Licht aus" : "Licht an"; })
+    .catch(() => {});
 }
 function scanFromFile(file){
-  const proceed = () => {
-    if (!_html5q) _html5q = new window.Html5Qrcode("qrReader", { formatsToSupport: scanFormats(), verbose:false });
-    const dec = _html5q.scanFileV2 ? _html5q.scanFileV2(file, false).then(r => r.decodedText) : _html5q.scanFile(file, false);
-    Promise.resolve(dec).then(text => { if (text){ onBarcode(text); } })
-      .catch(() => { const m = document.getElementById("scanMsg"); if (m) m.innerHTML = '<span style="color:var(--sick-fg)">Im Foto kein Barcode erkannt — näher/schärfer fotografieren oder Nummer eintippen.</span>'; });
-  };
-  loadHtml5Qrcode(() => {
-    if (_html5q && _html5q.isScanning){ _html5q.stop().then(proceed).catch(proceed); } else proceed();
+  const msg = document.getElementById("scanMsg"); if (msg) msg.textContent = "Foto wird ausgewertet…";
+  loadZbar(async () => {
+    try {
+      const url = URL.createObjectURL(file);
+      const im = new Image(); im.src = url;
+      await im.decode();
+      URL.revokeObjectURL(url);
+      const tryScan = async maxSide => {
+        const w = im.naturalWidth, h = im.naturalHeight;
+        const s = maxSide ? Math.min(1, maxSide/Math.max(w,h)) : 1;
+        const cw = Math.max(1, Math.round(w*s)), ch = Math.max(1, Math.round(h*s));
+        const c = document.createElement("canvas"); c.width = cw; c.height = ch;
+        const ctx = c.getContext("2d", { willReadFrequently:true });
+        ctx.drawImage(im, 0, 0, cw, ch);
+        return await window.zbarWasm.scanImageData(ctx.getImageData(0, 0, cw, ch));
+      };
+      let symbols = await tryScan(2200);
+      if (!symbols || !symbols.length) symbols = await tryScan(1400);
+      if (!symbols || !symbols.length) symbols = await tryScan(0);
+      if (symbols && symbols.length){ onBarcode(symbols[0].decode()); }
+      else if (msg) msg.innerHTML = '<span style="color:var(--sick-fg)">Im Foto kein Barcode erkannt. Tipp: Strichcode formatfüllend & scharf fotografieren — oder Nummer eintippen.</span>';
+    } catch(e){ if (msg) msg.textContent = "Foto-Auswertung fehlgeschlagen: " + e.message; }
   });
 }
-function loadHtml5Qrcode(cb){
-  if (window.Html5Qrcode){ cb(); return; }
-  const s = document.createElement("script");
-  s.src = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js";
-  s.onload = cb; s.onerror = () => alert("Scanner-Bibliothek konnte nicht geladen werden (offline?).");
-  document.head.appendChild(s);
-}
 window.stopScan = function(){
-  if (_html5q){ try { if (_html5q.isScanning) _html5q.stop().then(() => _html5q.clear()).catch(() => {}); else _html5q.clear(); } catch(e){} }
-  _html5q = null; _torchOn = false;
+  if (_scanLoop){ clearTimeout(_scanLoop); _scanLoop = null; }
+  if (_scanStream){ try { _scanStream.getTracks().forEach(t=>t.stop()); } catch(e){} _scanStream = null; }
+  _torchTrack = null; _torchOn = false;
   const box = document.getElementById("scanBox"); if (box){ box.style.display="none"; box.innerHTML=""; }
 };
 async function onBarcode(code){
