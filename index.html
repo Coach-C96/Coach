@@ -1210,7 +1210,7 @@ function renderLog(){
     <div class="card">
       <div class="row">
         <label>Datum:</label><input type="date" id="logDate" value="${today()}">
-        <label>Trainingstag:</label><select id="logDay">${plan.map(d=>`<option>${d.day}</option>`).join("")}</select>
+        <label>Trainingstag:</label><select id="logDay">${plan.map((d,i)=>`<option value="${i}">${d.day}</option>`).join("")}</select>
       </div>
     </div>
     <div id="warmupCard"></div>
@@ -1249,7 +1249,8 @@ function renderLog(){
 function renderWarmup(){
   const box = document.getElementById("warmupCard");
   if (!box) return;
-  const dayName = document.getElementById("logDay").value;
+  const di = +document.getElementById("logDay").value || 0;
+  const dayName = plan[di] ? plan[di].day : "";
   const w = warmupFor(dayName);
   box.innerHTML = `<div class="warmup">
     <div class="ex-name" style="margin-bottom:2px">Aufwärmen · ${w.title}</div>
@@ -1327,8 +1328,8 @@ window.startRestFromSet = function(){
   restStart(restDur);
 };
 function renderExForms(){
-  const dayName = document.getElementById("logDay").value;
-  const day = plan.find(d=>d.day===dayName) || plan[0];
+  const di = +document.getElementById("logDay").value || 0;
+  const day = plan[di] || plan[0];
   if (!day){ document.getElementById("exForms").innerHTML = '<div class="empty">Kein Plan vorhanden — leg im Tab "Plan" einen an.</div>'; return; }
   const cb = comebackState();
   document.getElementById("exForms").innerHTML = day.ex.map(ex=>{
@@ -1384,7 +1385,8 @@ function saveSession(){
     if (sets.length) entries.push({ex:card.dataset.ex, sets});
   });
   if (!entries.length){ alert("Keine Sätze eingetragen."); return; }
-  logs.push({ date:document.getElementById("logDate").value, day:document.getElementById("logDay").value,
+  const _di = +document.getElementById("logDay").value || 0;
+  logs.push({ date:document.getElementById("logDate").value, day:(plan[_di]?plan[_di].day:""),
     note:document.getElementById("logNote").value, entries });
   logs.sort((a,b)=>a.date.localeCompare(b.date));
   saveAll(); renderComeback(); renderLog(); toast("Training gespeichert");
