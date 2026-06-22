@@ -195,6 +195,20 @@
   #trainModeBtn.on { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
   .tm-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#3ec46a; margin-right:5px; vertical-align:middle; animation:tmpulse 1.4s infinite; }
   @keyframes tmpulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  /* ===== Fokus-Modus ===== */
+  .focus-bar { position:sticky; top:0; z-index:5; }
+  .focus-top { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; }
+  .focus-pos { font-size:13px; font-weight:700; color:var(--text); }
+  .focus-top .btn.small:disabled { opacity:.4; cursor:default; }
+  .fdots { display:flex; gap:8px; flex-wrap:wrap; }
+  .fdot { width:14px; height:14px; border-radius:50%; border:2px solid var(--border); background:var(--bar-bg); cursor:pointer; padding:0; transition:transform .15s, background .2s; }
+  .fdot.part { background:var(--gcol,var(--accent)); border-color:var(--gcol,var(--accent)); opacity:.45; }
+  .fdot.done { background:var(--gcol,var(--accent)); border-color:var(--gcol,var(--accent)); }
+  .fdot.cur { background:transparent; border-color:var(--gcol,var(--accent)); border-width:3px; transform:scale(1.25); }
+  .ex-form { display:none; }
+  .ex-form.focus-active { display:block; }
+  .ex-form.focus-active .ex-name { font-size:18px; }
+  .focus-done-note { font-size:12px; color:var(--ok-fg); font-weight:600; margin-top:4px; }
 </style>
 </head>
 <body>
@@ -1535,7 +1549,9 @@ function renderExForms(){
     </div>`;
   }).join("");
   wrap.querySelectorAll(".ex-form input").forEach(inp => inp.addEventListener("input", updateLiveStats));
+  focusIdx = 0;
   updateLiveStats();
+  applyFocus();
 }
 window.addSet = function(btn){
   const card = btn.closest(".ex-form");
@@ -1584,7 +1600,48 @@ function updateLiveStats(){
     groupVol[gk] = (groupVol[gk]||0) + st.volm;
   });
   renderSessHead({groupVol, totDone, totSets});
+  refreshFocusDots();
 }
+// ===== Fokus-Modus: eine Übung im Blick =====
+let focusIdx = 0;
+function exDoneState(card){ const st = cardLiveStats(card); return (st.total>0 && st.filled>=st.total) ? "done" : (st.filled>0 ? "part" : "todo"); }
+function applyFocus(){
+  const cards = [...document.querySelectorAll("#exForms .ex-form")];
+  if (!cards.length){ const fb=document.getElementById("focusBar"); if(fb) fb.remove(); return; }
+  focusIdx = Math.max(0, Math.min(focusIdx, cards.length-1));
+  cards.forEach((c,i)=> c.classList.toggle("focus-active", i===focusIdx));
+  renderFocusBar(cards);
+  if (trainMode){ mediaExIdx = focusIdx; mediaUpdate(); }
+}
+function renderFocusBar(cards){
+  let bar = document.getElementById("focusBar");
+  if (!bar){ bar = document.createElement("div"); bar.id="focusBar"; bar.className="card focus-bar"; document.getElementById("exForms").prepend(bar); }
+  const total = cards.length;
+  const dots = cards.map((c,i)=>{
+    const cls = i===focusIdx ? "cur" : exDoneState(c);
+    return `<button type="button" class="fdot ${cls}" style="--gcol:var(--grp-${muscleGroup(c.dataset.ex).key})" onclick="focusJump(${i})" aria-label="Übung ${i+1}"></button>`;
+  }).join("");
+  bar.innerHTML = `<div class="focus-top">
+      <button type="button" class="btn small" onclick="focusGo(-1)" ${focusIdx===0?"disabled":""}>‹ Zurück</button>
+      <span class="focus-pos">Übung ${focusIdx+1} / ${total}</span>
+      <button type="button" class="btn small" onclick="focusGo(1)" ${focusIdx===total-1?"disabled":""}>Weiter ›</button>
+    </div>
+    <div class="fdots">${dots}</div>`;
+}
+function refreshFocusDots(){
+  const cards = [...document.querySelectorAll("#exForms .ex-form")];
+  document.querySelectorAll("#focusBar .fdot").forEach((d,i)=>{
+    const c = cards[i]; if (!c) return;
+    const cls = i===focusIdx ? "cur" : exDoneState(c);
+    d.classList.remove("cur","done","part","todo"); d.classList.add(cls);
+  });
+}
+window.focusGo = function(d){
+  focusIdx += d; applyFocus();
+  const c = document.querySelectorAll("#exForms .ex-form")[focusIdx];
+  if (c) c.scrollIntoView({behavior:"smooth", block:"nearest"});
+};
+window.focusJump = function(i){ focusIdx = i; applyFocus(); };
 function renderSessHead(stats){
   const box = document.getElementById("sessHead");
   if (!box) return;
