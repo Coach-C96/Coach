@@ -151,6 +151,50 @@
   .pchips { display:flex; gap:6px; flex-wrap:wrap; }
   .pchip { border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:8px; font-size:12px; padding:5px 10px; cursor:pointer; }
   .pchip:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* ===== Trainings-Redesign ===== */
+  :root, [data-theme] {
+    --grp-brust:#e0563f; --grp-ruecken:#3f86e0; --grp-schulter:#e0a23f; --grp-beine:#46b86a; --grp-arme:#a85fe0; --grp-core:#4cc4c4; --grp-default:#8b94a3;
+  }
+  .ex-form { position:relative; padding-left:18px; overflow:hidden; }
+  .ex-form::before { content:""; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--gcol,var(--grp-default)); }
+  .ex-form.done-all::before { box-shadow:0 0 12px var(--gcol,var(--grp-default)); }
+  .ex-head { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  .ex-head .ex-name { margin:0; flex:1; }
+  .grp-tag { font-size:10px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--gcol,var(--grp-default)); margin-bottom:2px; }
+  /* progress ring */
+  .ring { width:42px; height:42px; flex-shrink:0; transform:rotate(-90deg); }
+  .ring circle { fill:none; stroke-width:5; }
+  .ring .ring-bg { stroke:var(--bar-bg); }
+  .ring .ring-fg { stroke:var(--gcol,var(--accent)); stroke-linecap:round; transition:stroke-dashoffset .35s ease; }
+  .ring-wrap { position:relative; width:42px; height:42px; flex-shrink:0; }
+  .ring-wrap .ring-txt { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; transform:rotate(0); }
+  /* set chips */
+  .set-row { display:flex; gap:8px; align-items:center; margin-bottom:7px; background:var(--soft); border:1px solid var(--border); border-radius:10px; padding:6px 8px; transition:border-color .2s, background .2s; }
+  .set-row.filled { border-color:var(--gcol,var(--ok-fg)); background:var(--card); }
+  .set-num { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--bar-bg); color:var(--muted); font-size:12px; font-weight:700; flex-shrink:0; transition:background .2s,color .2s; }
+  .set-row.filled .set-num { background:var(--gcol,var(--ok-fg)); color:#fff; }
+  .set-row input[type=number] { width:62px; background:var(--input-bg); }
+  .set-row span.unit { font-size:11px; color:var(--muted); }
+  .set-rest-btn { margin-left:auto; }
+  .bw-note { font-size:11px; color:var(--muted); background:var(--soft); border-radius:8px; padding:5px 9px; margin-bottom:8px; display:inline-block; }
+  .bw-note b { color:var(--text); }
+  /* session header */
+  .sess-head { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  .sess-rings { display:flex; align-items:center; gap:12px; }
+  .gvols { flex:1; min-width:180px; display:flex; flex-direction:column; gap:7px; }
+  .gvol { display:flex; align-items:center; gap:9px; font-size:12px; }
+  .gvol .gv-name { width:64px; color:var(--muted); font-weight:600; }
+  .gvol .gv-track { flex:1; height:9px; border-radius:5px; background:var(--bar-bg); overflow:hidden; }
+  .gvol .gv-fill { height:100%; border-radius:5px; background:var(--gc,var(--accent)); transition:width .35s ease; }
+  .gvol .gv-num { width:58px; text-align:right; font-variant-numeric:tabular-nums; color:var(--text); font-weight:600; }
+  .sess-big { text-align:center; }
+  .sess-big .v { font-size:26px; font-weight:800; line-height:1; }
+  .sess-big .l { font-size:11px; color:var(--muted); }
+  /* Trainings-Modus button */
+  #trainModeBtn.on { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+  .tm-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#3ec46a; margin-right:5px; vertical-align:middle; animation:tmpulse 1.4s infinite; }
+  @keyframes tmpulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 </style>
 </head>
 <body>
@@ -1214,10 +1258,14 @@ function renderLog(){
       </div>
     </div>
     <div id="warmupCard"></div>
+    <div id="sessHead"></div>
     <div class="card">
       <div class="row" style="justify-content:space-between;margin-bottom:8px">
         <div class="ex-name" style="margin:0">Pausen-Timer</div>
-        <button class="btn small" id="restToggle">Anzeigen</button>
+        <div class="row" style="margin:0;gap:6px">
+          <button class="btn small" id="trainModeBtn" title="Bildschirm anlassen + Steuerung auf dem Sperrbildschirm">Trainings-Modus</button>
+          <button class="btn small" id="restToggle">Anzeigen</button>
+        </div>
       </div>
       <div id="restBody" style="display:none">
         <div class="rest-bar">
@@ -1240,7 +1288,7 @@ function renderLog(){
       <textarea id="logNote" placeholder="z.B. Nacken gut, Energie mittel..."></textarea>
     </div>
     <button class="btn" id="saveBtn">Training speichern</button>`;
-  document.getElementById("logDay").onchange = () => { renderWarmup(); renderExForms(); };
+  document.getElementById("logDay").onchange = () => { renderWarmup(); renderExForms(); mediaExIdx=0; if (trainMode){ refreshMediaList(); mediaUpdate(); } };
   document.getElementById("saveBtn").onclick = saveSession;
   setupRestTimer();
   renderWarmup();
@@ -1271,6 +1319,7 @@ function restUpdateUI(){
   f.style.width = (restDur>0 ? Math.max(0, restRemain/restDur*100) : 0) + "%";
   document.querySelectorAll("#restPresets .btn").forEach(b => b.classList.toggle("on", +b.dataset.s===restDur && !restRunning));
 }
+let lastMediaSec = -1;
 function restTick(){
   restRemain = (restEndAt - Date.now())/1000;
   if (restRemain <= 0){
@@ -1278,6 +1327,8 @@ function restTick(){
     return;
   }
   restUpdateUI();
+  const sec = Math.ceil(restRemain);
+  if (sec !== lastMediaSec){ lastMediaSec = sec; mediaUpdate(); }
 }
 function restStart(dur){
   if (dur) { restDur = dur; }
@@ -1289,6 +1340,7 @@ function restStart(dur){
   const body = document.getElementById("restBody"), tog = document.getElementById("restToggle");
   if (body && body.style.display==="none"){ body.style.display=""; if (tog) tog.textContent="Verbergen"; }
   restUpdateUI();
+  lastMediaSec = -1; mediaUpdate();
 }
 function restStop(finished){
   restRunning = false;
@@ -1303,8 +1355,10 @@ function restStop(finished){
     } catch(e){}
     toast("Pause vorbei — nächster Satz");
     restRemain = restDur;
+    if (trainMode && mediaExIdx < mediaExList.length-1) mediaExIdx++;
   }
   restUpdateUI();
+  mediaUpdate();
 }
 function setupRestTimer(){
   const pre = document.getElementById("restPresets");
@@ -1313,6 +1367,7 @@ function setupRestTimer(){
   pre.querySelectorAll(".btn").forEach(b => b.onclick = () => { restDur = +b.dataset.s; if (restRunning) restStart(restDur); else { restRemain = restDur; restUpdateUI(); } });
   document.getElementById("restStart").onclick = () => restRunning ? restStop(false) : restStart(restDur);
   document.getElementById("restReset").onclick = () => { restStop(false); restRemain = restDur; restUpdateUI(); };
+  const tmb = document.getElementById("trainModeBtn"); if (tmb) tmb.onclick = toggleTrainMode;
   document.getElementById("restToggle").onclick = () => {
     const body = document.getElementById("restBody"), tog = document.getElementById("restToggle");
     const show = body.style.display==="none";
@@ -1322,65 +1377,252 @@ function setupRestTimer(){
   restDur = 90; restRemain = 90; restRunning = false;
   restUpdateUI();
 }
-window.startRestFromSet = function(){
+window.startRestFromSet = function(btn){
   const body = document.getElementById("restBody"), tog = document.getElementById("restToggle");
   if (body && body.style.display==="none"){ body.style.display=""; if(tog) tog.textContent="Verbergen"; }
+  if (btn){ const card = btn.closest(".ex-form"); if (card) mediaSetCurrent(card.dataset.ex); }
   restStart(restDur);
 };
+
+// ================= Trainings-Modus: Wake Lock + Media Session =================
+let trainMode=false, wakeLock=null, silentAudio=null, silentURL=null;
+let mediaExList=[], mediaExIdx=0;
+function silentWavURL(){
+  const sr=8000, n=sr; // 1s
+  const buf=new ArrayBuffer(44+n*2), dv=new DataView(buf); let p=0;
+  const s8=s=>{for(let i=0;i<s.length;i++)dv.setUint8(p++,s.charCodeAt(i));};
+  const s32=d=>{dv.setUint32(p,d,true);p+=4;}; const s16=d=>{dv.setUint16(p,d,true);p+=2;};
+  s8("RIFF"); s32(36+n*2); s8("WAVE"); s8("fmt "); s32(16); s16(1); s16(1); s32(sr); s32(sr*2); s16(2); s16(16); s8("data"); s32(n*2);
+  return URL.createObjectURL(new Blob([buf],{type:"audio/wav"}));
+}
+function refreshMediaList(){
+  const di = +(document.getElementById("logDay")?.value||0);
+  const day = plan[di] || plan[0];
+  mediaExList = day ? day.ex.map(e=>e.n) : [];
+  if (mediaExIdx >= mediaExList.length) mediaExIdx = 0;
+}
+function mediaSetCurrent(exName){
+  const i = mediaExList.indexOf(exName);
+  if (i>=0) mediaExIdx = i;
+  mediaUpdate();
+}
+function mediaUpdate(){
+  if (!trainMode || !("mediaSession" in navigator)) return;
+  const cur = mediaExList[mediaExIdx] || "Bereit";
+  const next = mediaExList[mediaExIdx+1];
+  let title, artist;
+  if (restRunning){ title = `Pause ${fmtTime(restRemain)}`; artist = `Weiter: ${cur}`; }
+  else { title = cur; artist = next ? `Danach: ${next}` : "Trainings-Modus läuft"; }
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({ title, artist, album:"Coach — Training" });
+    navigator.mediaSession.playbackState = restRunning ? "playing" : "paused";
+    if (restRunning && "setPositionState" in navigator.mediaSession){
+      const dur = Math.max(restDur,1);
+      navigator.mediaSession.setPositionState({ duration:dur, position:Math.min(dur, dur-restRemain), playbackRate:1 });
+    }
+  } catch(e){}
+}
+function mediaSetHandlers(){
+  if (!("mediaSession" in navigator)) return;
+  const set = (a,fn)=>{ try{ navigator.mediaSession.setActionHandler(a, fn); }catch(e){} };
+  set("play", ()=>{ if (!restRunning) restStart(restDur); else mediaUpdate(); });
+  set("pause", ()=>{ if (restRunning) restStop(false); mediaUpdate(); });
+  set("nexttrack", ()=>{ if (mediaExIdx < mediaExList.length-1) mediaExIdx++; if (restRunning) restStop(false); mediaUpdate(); });
+  set("previoustrack", ()=>{ if (mediaExIdx > 0) mediaExIdx--; mediaUpdate(); });
+  set("stop", ()=> exitTrainMode());
+}
+async function reqWakeLock(){
+  try { if ("wakeLock" in navigator){ wakeLock = await navigator.wakeLock.request("screen"); } } catch(e){}
+}
+async function enterTrainMode(){
+  trainMode = true;
+  refreshMediaList();
+  if (!silentURL) silentURL = silentWavURL();
+  if (!silentAudio){ silentAudio = new Audio(silentURL); silentAudio.loop = true; silentAudio.volume = 1; }
+  try { await silentAudio.play(); } catch(e){}
+  await reqWakeLock();
+  mediaSetHandlers();
+  mediaUpdate();
+  const b = document.getElementById("trainModeBtn");
+  if (b){ b.classList.add("on"); b.innerHTML = `<span class="tm-dot"></span>Modus aktiv`; }
+  toast("Trainings-Modus an — Bildschirm bleibt an, Steuerung auf dem Sperrbildschirm");
+}
+function exitTrainMode(){
+  trainMode = false;
+  try { silentAudio && silentAudio.pause(); } catch(e){}
+  try { wakeLock && wakeLock.release(); } catch(e){}
+  wakeLock = null;
+  if ("mediaSession" in navigator){ try { navigator.mediaSession.metadata = null; navigator.mediaSession.playbackState = "none"; } catch(e){} }
+  const b = document.getElementById("trainModeBtn");
+  if (b){ b.classList.remove("on"); b.textContent = "Trainings-Modus"; }
+  toast("Trainings-Modus aus");
+}
+window.toggleTrainMode = function(){ trainMode ? exitTrainMode() : enterTrainMode(); };
+document.addEventListener("visibilitychange", ()=>{ if (trainMode && document.visibilityState==="visible" && !wakeLock) reqWakeLock(); });
+// ===== Muskelgruppen / Körpergewicht-Helfer =====
+const MGROUPS = [
+  {key:"brust",   name:"Brust",   re:/brust|bankdr|butterfly|dips|fly|flys|liegestütz|push-?up|incline|schräg|chest|brustpresse/},
+  {key:"ruecken", name:"Rücken",  re:/\brücken|ruder|rudern|pull-?up|klimmz|chin-?up|latzug|lat |überzug|pulldown|\brow|kreuzheben|deadlift/},
+  {key:"schulter",name:"Schulter",re:/schulter|seitheben|face ?pull|reverse fly|ytw|shrug|nacken|schulterdr|delt|lateral|überkopf/},
+  {key:"arme",    name:"Arme",    re:/bizeps|trizeps|curl|tricep|bicep|hammer|dr[üu]cken am kabel/},
+  {key:"core",    name:"Core",    re:/bauch|crunch|plank|core|beincrunch|hängend|sit-?up|ab |bein.?crunch/},
+  {key:"beine",   name:"Beine",   re:/bein|squat|kniebeug|beinpres|beinbeug|beinstreck|waden|ausfallschritt|lunge|glute|hip thrust|leg/}
+];
+function muscleGroup(name){
+  const lo = (name||"").toLowerCase();
+  for (const g of MGROUPS) if (g.re.test(lo)) return g;
+  return {key:"default", name:"Übung"};
+}
+function isBodyweight(name){
+  return /pull-?up|klimmz|chin-?up|muscle-?up|liegestütz|push-?up|dips|hängende|beincrunch|körpergewicht/i.test(name||"");
+}
+function bodyKg(){
+  if (weights && weights.length){ const w=[...weights].sort((a,b)=>a.date.localeCompare(b.date)); return w[w.length-1].kg || 0; }
+  return (profile && profile.w) || 0;
+}
+function setVol(x){ const base = x.bw ? (x.bwAt || bodyKg()) : 0; return (base + (x.w||0)) * (x.r||0); }
+function fmtPrevSet(s){ return (s.bw ? `+${s.w||0}kg×${s.r}` : `${s.w}kg×${s.r}`) + (s.rpe?`@${s.rpe}`:""); }
+const RING_C = 113.097; // 2*pi*18
+
 function renderExForms(){
   const di = +document.getElementById("logDay").value || 0;
   const day = plan[di] || plan[0];
-  if (!day){ document.getElementById("exForms").innerHTML = '<div class="empty">Kein Plan vorhanden — leg im Tab "Plan" einen an.</div>'; return; }
+  const wrap = document.getElementById("exForms");
+  if (!day){ wrap.innerHTML = '<div class="empty">Kein Plan vorhanden — leg im Tab "Plan" einen an.</div>'; renderSessHead(); return; }
   const cb = comebackState();
-  document.getElementById("exForms").innerHTML = day.ex.map(ex=>{
+  const bkg = bodyKg();
+  wrap.innerHTML = day.ex.map(ex=>{
+    const g = muscleGroup(ex.n);
+    const bw = isBodyweight(ex.n);
     const prev = lastSets(ex.n);
-    let hint = prev ? `Letztes Mal (${prev.date}): ${prev.sets.map(s=>`${s.w}kg×${s.r}${s.rpe?"@"+s.rpe:""}`).join(" · ")}` : "Noch keine Daten";
+    let hint = prev ? `Letztes Mal (${prev.date}): ${prev.sets.map(fmtPrevSet).join(" · ")}` : "Noch keine Daten";
     let cbHint = "";
     if (cb && cb.factor>0 && prev){
       const top = Math.max(...prev.sets.map(s=>s.w||0));
       if (top>0) cbHint = `<br><span class="badge sick">Comeback-Empfehlung: ~${round25(top*cb.factor)} kg</span>`;
     }
+    const wunit = bw ? "+kg ×" : "kg ×";
     let rows = "";
     for (let s=0;s<ex.sets;s++){
       const p = prev && prev.sets[s] ? prev.sets[s] : {w:"",r:"",rpe:""};
+      const wph = bw ? (p.w!==""?("+"+p.w):"+0") : (p.w!==""?p.w:"kg");
       rows += `<div class="set-row"><span class="set-num">${s+1}</span>
-        <input type="number" step="0.5" placeholder="${p.w!==""?p.w:"kg"}" data-f="w"> <span class="unit">kg ×</span>
-        <input type="number" placeholder="${p.r!==""?p.r:"Reps"}" data-f="r"> <span class="unit">Reps @</span>
-        <input type="number" step="0.5" min="5" max="10" placeholder="${p.rpe!==""&&p.rpe!=null?p.rpe:"RPE"}" data-f="rpe">
-        <button type="button" class="set-rest-btn" onclick="startRestFromSet()" title="Pause starten">Pause</button></div>`;
+        <input type="number" step="0.5" inputmode="decimal" placeholder="${wph}" data-f="w"> <span class="unit">${wunit}</span>
+        <input type="number" inputmode="numeric" placeholder="${p.r!==""?p.r:"Reps"}" data-f="r"> <span class="unit">Reps @</span>
+        <input type="number" step="0.5" min="5" max="10" inputmode="decimal" placeholder="${p.rpe!==""&&p.rpe!=null?p.rpe:"RPE"}" data-f="rpe">
+        <button type="button" class="set-rest-btn btn small" onclick="startRestFromSet(this)" title="Pause starten">Pause</button></div>`;
     }
     const lo = ex.n.toLowerCase();
     let prio = "";
     if (/brust|bankdr|butterfly|dips|fly|liegestütz|incline|schräg/.test(lo)) prio = `<span class="badge pr" style="margin-left:6px">Brust-Prio</span>`;
-    else if (/face pull|außenrot|reverse fly|ytw|shrug|nacken|schulter/.test(lo)) prio = `<span class="badge warn" style="margin-left:6px">Nacken-Achtung</span>`;
-    return `<div class="card ex-form" data-ex="${ex.n}">
-      <div class="ex-name">${ex.n}${prio}</div>
+    else if (/face ?pull|außenrot|reverse fly|ytw|shrug|nacken|schulter/.test(lo)) prio = `<span class="badge warn" style="margin-left:6px">Nacken-Achtung</span>`;
+    const bwNote = bw ? `<div class="bw-note">Körpergewicht <b>${bkg||"—"} kg</b> zählt automatisch fürs Volumen — hier nur <b>Zusatzgewicht</b> eintragen (0 wenn keins).</div>` : "";
+    return `<div class="card ex-form" data-ex="${ex.n}" data-bw="${bw?1:0}" style="--gcol:var(--grp-${g.key})">
+      <div class="ex-head">
+        <div style="flex:1">
+          <div class="grp-tag">${g.name}</div>
+          <div class="ex-name">${ex.n}${prio}</div>
+        </div>
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 42 42"><circle class="ring-bg" cx="21" cy="21" r="18"></circle><circle class="ring-fg" cx="21" cy="21" r="18" stroke-dasharray="${RING_C}" stroke-dashoffset="${RING_C}"></circle></svg>
+          <span class="ring-txt">0/${ex.sets}</span>
+        </div>
+      </div>
       <div class="ex-target">Ziel: ${ex.t}<br><span class="badge">${hint}</span>${cbHint}</div>
+      ${bwNote}
       ${rows}
       <button class="btn small" onclick="addSet(this)">+ Satz</button>
     </div>`;
   }).join("");
+  wrap.querySelectorAll(".ex-form input").forEach(inp => inp.addEventListener("input", updateLiveStats));
+  updateLiveStats();
 }
 window.addSet = function(btn){
   const card = btn.closest(".ex-form");
+  const bw = card.dataset.bw==="1";
   const n = card.querySelectorAll(".set-row").length + 1;
   const div = document.createElement("div");
   div.className = "set-row";
   div.innerHTML = `<span class="set-num">${n}</span>
-    <input type="number" step="0.5" placeholder="kg" data-f="w"> <span class="unit">kg ×</span>
-    <input type="number" placeholder="Reps" data-f="r"> <span class="unit">Reps @</span>
-    <input type="number" step="0.5" min="5" max="10" placeholder="RPE" data-f="rpe">
-    <button type="button" class="set-rest-btn" onclick="startRestFromSet()" title="Pause starten">Pause</button>`;
+    <input type="number" step="0.5" inputmode="decimal" placeholder="${bw?"+0":"kg"}" data-f="w"> <span class="unit">${bw?"+kg ×":"kg ×"}</span>
+    <input type="number" inputmode="numeric" placeholder="Reps" data-f="r"> <span class="unit">Reps @</span>
+    <input type="number" step="0.5" min="5" max="10" inputmode="decimal" placeholder="RPE" data-f="rpe">
+    <button type="button" class="set-rest-btn btn small" onclick="startRestFromSet(this)" title="Pause starten">Pause</button>`;
   card.insertBefore(div, btn);
+  div.querySelectorAll("input").forEach(inp => inp.addEventListener("input", updateLiveStats));
+  updateLiveStats();
 };
+// ===== Live-Statistik: Ringe + Volumen-Balken =====
+function cardLiveStats(card){
+  const rows = [...card.querySelectorAll(".set-row")];
+  const bw = card.dataset.bw==="1";
+  const bkg = bodyKg();
+  let filled=0, volm=0;
+  rows.forEach(r=>{
+    const wv = r.querySelector('[data-f=w]').value;
+    const rv = r.querySelector('[data-f=r]').value;
+    const repN = rv===""?0:+rv;
+    const wN = wv===""?0:+wv;
+    const done = repN>0;
+    r.classList.toggle("filled", done);
+    if (done){ filled++; volm += ((bw?bkg:0) + wN) * repN; }
+  });
+  return {filled, total:rows.length, volm};
+}
+function updateLiveStats(){
+  const cards = [...document.querySelectorAll("#exForms .ex-form")];
+  const groupVol = {}; let totDone=0, totSets=0;
+  cards.forEach(card=>{
+    const st = cardLiveStats(card);
+    totDone += st.filled; totSets += st.total;
+    const frac = st.total ? st.filled/st.total : 0;
+    const fg = card.querySelector(".ring-fg"), txt = card.querySelector(".ring-txt");
+    if (fg) fg.style.strokeDashoffset = (RING_C*(1-frac)).toFixed(1);
+    if (txt) txt.textContent = `${st.filled}/${st.total}`;
+    card.classList.toggle("done-all", st.total>0 && st.filled===st.total);
+    const gk = muscleGroup(card.dataset.ex).key;
+    groupVol[gk] = (groupVol[gk]||0) + st.volm;
+  });
+  renderSessHead({groupVol, totDone, totSets});
+}
+function renderSessHead(stats){
+  const box = document.getElementById("sessHead");
+  if (!box) return;
+  if (!stats){ updateLiveStats(); return; }
+  const {groupVol, totDone, totSets} = stats;
+  const frac = totSets ? totDone/totSets : 0;
+  const entries = Object.entries(groupVol).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const max = entries.length ? entries[0][1] : 1;
+  const gname = {brust:"Brust",ruecken:"Rücken",schulter:"Schulter",arme:"Arme",core:"Core",beine:"Beine",default:"Übung"};
+  const totalVol = entries.reduce((s,[,v])=>s+v,0);
+  const bars = entries.length
+    ? entries.map(([k,v])=>`<div class="gvol"><span class="gv-name">${gname[k]||k}</span><div class="gv-track"><div class="gv-fill" style="width:${Math.max(4,v/max*100)}%;--gc:var(--grp-${k})"></div></div><span class="gv-num">${Math.round(v).toLocaleString("de-DE")}</span></div>`).join("")
+    : `<div style="font-size:12px;color:var(--muted)">Sobald du Sätze einträgst, erscheint hier das Volumen pro Muskelgruppe.</div>`;
+  box.innerHTML = `<div class="card"><div class="sess-head">
+    <div class="sess-rings">
+      <div class="ring-wrap" style="--gcol:var(--accent)">
+        <svg class="ring" viewBox="0 0 42 42"><circle class="ring-bg" cx="21" cy="21" r="18"></circle><circle class="ring-fg" cx="21" cy="21" r="18" stroke-dasharray="${RING_C}" stroke-dashoffset="${(RING_C*(1-frac)).toFixed(1)}"></circle></svg>
+        <span class="ring-txt">${totDone}/${totSets}</span>
+      </div>
+      <div class="sess-big"><div class="v">${Math.round(totalVol).toLocaleString("de-DE")}</div><div class="l">kg Volumen</div></div>
+    </div>
+    <div class="gvols">${bars}</div>
+  </div></div>`;
+}
 function saveSession(){
   const entries = [];
+  const bkg = bodyKg();
   document.querySelectorAll(".ex-form").forEach(card=>{
+    const bw = card.dataset.bw==="1";
     const sets = [];
     card.querySelectorAll(".set-row").forEach(r=>{
       const g = f => { const v = r.querySelector(`[data-f=${f}]`).value; return v==="" ? null : +v; };
       const w=g("w"), rep=g("r"), rpe=g("rpe");
-      if (rep!==null) sets.push({w:w??0, r:rep, rpe:rpe??null});
+      if (rep!==null){
+        const o = {w:w??0, r:rep, rpe:rpe??null};
+        if (bw){ o.bw=1; o.bwAt=bkg||null; }
+        sets.push(o);
+      }
     });
     if (sets.length) entries.push({ex:card.dataset.ex, sets});
   });
@@ -1394,7 +1636,7 @@ function saveSession(){
 
 // ================= Training: Progression =================
 let chart, foodChart, weightChart;
-function vol(e){ return e.sets.reduce((s,x)=>s+(x.w||0)*(x.r||0),0); }
+function vol(e){ return e.sets.reduce((s,x)=>s+setVol(x),0); }
 function allExercises(){
   const s = new Set();
   logs.forEach(l=>l.entries.forEach(e=>s.add(e.ex)));
